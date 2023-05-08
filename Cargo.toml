@@ -1,0 +1,9 @@
+[package]
+name = "fenrir-rs"
+version = "0.0.0"
+edition = "2021"
+authors = ["Tim Janke <tim+github@janke.biz>"]
+repository = "https://github.com/flying7eleven/fenrir-rs"
+readme = "README.md"
+license-file = "LICENSE.md"
+rust-version = "1.69.0"
