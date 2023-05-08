@@ -4,6 +4,13 @@ version = "0.0.0"
 edition = "2021"
 authors = ["Tim Janke <tim+github@janke.biz>"]
 repository = "https://github.com/flying7eleven/fenrir-rs"
+description = "Fenrir is a create for using logi for log aggregation which can be used with a logging framework like fern."
+keywords = ['loki', 'logging', 'log', 'logfmt']
+categories = ['development-tools::debugging']
 readme = "README.md"
 license-file = "LICENSE.md"
 rust-version = "1.69.0"
+
+[dependencies.log]
+version = "0.4.17"
+default-features = false
