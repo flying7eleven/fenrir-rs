@@ -1,3 +1,4 @@
+use log::{Log, Metadata, Record};
 use url::Url;
 
 /// The `Fenrir` struct implements the communication interface with a [Loki](https://grafana.com/oss/loki/) instance.
@@ -44,5 +45,19 @@ impl FenrirBuilder {
         Fenrir {
             endpoint: self.endpoint,
         }
+    }
+}
+
+impl Log for Fenrir {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        todo!()
+    }
+
+    fn log(&self, record: &Record) {
+        todo!()
+    }
+
+    fn flush(&self) {
+        todo!()
     }
 }
