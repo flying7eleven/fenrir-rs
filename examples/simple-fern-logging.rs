@@ -1,9 +1,9 @@
-use fenrir_rs::FenrirBuilder;
-use url::Url;
-
 fn main() {
+    use fenrir_rs::FenrirBuilder;
     use fern::Dispatch;
+    use log::LevelFilter;
     use log::{debug, error, info, trace, warn};
+    use url::Url;
 
     let my_loki = FenrirBuilder::new(Url::parse("http://localhost:3100").unwrap()).build();
 
@@ -19,6 +19,8 @@ fn main() {
         })
         // just log messages with DEBUG or higher log leven
         .level(log::LevelFilter::Debug)
+        // do not log messages from our network library
+        .level_for("ureq", LevelFilter::Off)
         // print the log messages to the console ...
         .chain(std::io::stdout())
         // ... and to the corresponding loki endpoint
