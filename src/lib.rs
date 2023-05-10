@@ -1,4 +1,6 @@
 use log::{Log, Metadata, Record};
+use serde::Serialize;
+use std::collections::HashMap;
 use url::Url;
 
 /// The `Fenrir` struct implements the communication interface with a [Loki](https://grafana.com/oss/loki/) instance.
@@ -48,16 +50,56 @@ impl FenrirBuilder {
     }
 }
 
+#[derive(Serialize)]
+struct Stream {
+    pub stream: HashMap<String, String>,
+    pub values: Vec<Vec<String>>,
+}
+
+#[derive(Serialize)]
+struct Streams {
+    pub streams: Vec<Stream>,
+}
+
 impl Log for Fenrir {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        todo!()
+    fn enabled(&self, _metadata: &Metadata) -> bool {
+        true // TODO: use the metadata object to decide if we should be enabled or not
     }
 
     fn log(&self, record: &Record) {
-        todo!()
+        use serde_json::to_string;
+        use std::time::Duration;
+        use std::time::{SystemTime, UNIX_EPOCH};
+        use ureq::AgentBuilder;
+
+        let module = record.module_path().unwrap_or("");
+        if module.starts_with("ureq") || !self.enabled(record.metadata()) {
+            return;
+        }
+
+        let log_stream = Streams {
+            streams: vec![Stream {
+                stream: HashMap::from([("logging_framework".to_string(), "fenrir".to_string())]),
+                values: vec![vec![
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_nanos()
+                        .to_string(),
+                    record.args().to_string(),
+                ]],
+            }],
+        };
+        let log_stream_text = to_string(&log_stream).unwrap();
+
+        let post_url = self.endpoint.clone().join("/loki/api/v1/push").unwrap();
+        let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
+        let mut request = agent.request_url("POST", &post_url);
+        request = request.set("Content-Type", "application/json; charset=utf-8");
+        let _ = request.send_string(log_stream_text.as_str()).unwrap();
     }
 
     fn flush(&self) {
-        todo!()
+        // TODO: implement the actual flushing
     }
 }
