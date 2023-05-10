@@ -1,6 +1,6 @@
 [package]
 name = "fenrir-rs"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 authors = ["Tim Janke <tim+github@janke.biz>"]
 repository = "https://github.com/flying7eleven/fenrir-rs"
