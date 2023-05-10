@@ -8,7 +8,7 @@ description = "Fenrir is a create for using logi for log aggregation which can b
 keywords = ['loki', 'logging', 'log', 'logfmt']
 categories = ['development-tools::debugging']
 readme = "README.md"
-license-file = "LICENSE.md"
+license = "MIT"
 rust-version = "1.69.0"
 
 [dependencies.log]
