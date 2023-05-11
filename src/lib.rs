@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use log::{Log, Metadata, Record};
 use serde::Serialize;
 use std::collections::HashMap;
