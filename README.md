@@ -22,6 +22,16 @@ It does this by integrating with the log crate.
 
 3. Use it 😉
 
+## Development and testing
+For easier testing and during the development phase, you can use the example docker-compose.yml to start your own instance of Loki locally.
+Just use `docker compose` to start the Loki container as well as a local Grafana instance for viewing the messages:
+
+```shell
+docker compose up -d
+```
+
+After the containers have started, you can visit [http://localhost:3000/explore](http://localhost:3000/explore) to query messages in your local Loki instance.
+
 ## Minimum Supported Rust Version (MSRV)
 The MSRV for this tool ist `1.69.0` since it uses rust 2021 edition features.
 
