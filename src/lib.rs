@@ -81,7 +81,10 @@ impl Log for Fenrir {
 
         let log_stream = Streams {
             streams: vec![Stream {
-                stream: HashMap::from([("logging_framework".to_string(), "fenrir".to_string())]),
+                stream: HashMap::from([
+                    ("logging_framework".to_string(), "fenrir".to_string()),
+                    ("logging_level".to_string(), record.level().to_string()),
+                ]),
                 values: vec![vec![
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
