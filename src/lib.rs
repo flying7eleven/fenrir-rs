@@ -83,7 +83,7 @@ impl Log for Fenrir {
             streams: vec![Stream {
                 stream: HashMap::from([
                     ("logging_framework".to_string(), "fenrir".to_string()),
-                    ("logging_level".to_string(), record.level().to_string()),
+                    ("level".to_string(), record.level().to_string()),
                 ]),
                 values: vec![vec![
                     SystemTime::now()
