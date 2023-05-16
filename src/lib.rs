@@ -11,6 +11,8 @@ use url::Url;
 pub struct Fenrir {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
+    /// The `credentials` to use to authenticate against the remote `endpoint`
+    credentials: Option<(String, String)>,
 }
 
 /// The `FenrirBuilder` struct is used to create a new instance of `Fenrir`using the builder pattern.
@@ -20,6 +22,8 @@ pub struct Fenrir {
 pub struct FenrirBuilder {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
+    /// The `credentials` to use to authenticate against the remote `endpoint`
+    credentials: Option<(String, String)>,
 }
 
 impl FenrirBuilder {
@@ -33,7 +37,25 @@ impl FenrirBuilder {
     /// let builder = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap());
     /// ```
     pub fn new(endpoint: Url) -> FenrirBuilder {
-        FenrirBuilder { endpoint }
+        FenrirBuilder {
+            endpoint,
+            credentials: None,
+        }
+    }
+
+    /// Ensure our client uses the supplied credentials for authentication against the remote endpoint.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::FenrirBuilder;
+    ///
+    /// let builder = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
+    ///     .with_authentication("foo".to_string(), "bar".to_string());
+    /// ```
+    pub fn with_authentication(mut self, username: String, password: String) -> FenrirBuilder {
+        self.credentials = Some((username, password));
+        self
     }
 
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling `build()`.
@@ -48,6 +70,7 @@ impl FenrirBuilder {
     pub fn build(self) -> Fenrir {
         Fenrir {
             endpoint: self.endpoint,
+            credentials: self.credentials,
         }
     }
 }
@@ -106,5 +129,29 @@ impl Log for Fenrir {
 
     fn flush(&self) {
         // TODO: implement the actual flushing
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::FenrirBuilder;
+    use url::Url;
+
+    #[test]
+    fn creating_an_instance_without_credentials_works_correctly() {
+        let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap()).build();
+        assert_eq!(result.credentials, None);
+    }
+
+    #[test]
+    fn creating_an_instance_with_credentials_works_correctly() {
+        let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
+            .with_authentication("username".to_string(), "password".to_string())
+            .build();
+        assert_ne!(result.credentials, None);
+        assert_eq!(
+            result.credentials.unwrap(),
+            ("username".to_string(), "password".to_string())
+        );
     }
 }
