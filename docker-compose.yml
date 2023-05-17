@@ -4,6 +4,23 @@ networks:
   loki:
 
 services:
+  nginx:
+    container_name: nginx
+    build:
+      context: docker/
+      dockerfile: Dockerfile.nginx
+    depends_on:
+      - loki
+    environment:
+      - FORWARD_HOST=loki
+      - FORWARD_PORT=3100
+      - BASIC_USERNAME=example
+      - BASIC_PASSWORD=password
+    ports:
+      - "8080:8080"
+    networks:
+      - loki
+
   loki:
     container_name: loki
     image: grafana/loki:latest
