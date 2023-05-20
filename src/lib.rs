@@ -12,7 +12,7 @@ pub struct Fenrir {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
     /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: Option<(String, String)>,
+    credentials: Option<String>,
 }
 
 /// The `FenrirBuilder` struct is used to create a new instance of `Fenrir`using the builder pattern.
@@ -23,7 +23,7 @@ pub struct FenrirBuilder {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
     /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: Option<(String, String)>,
+    credentials: Option<String>,
 }
 
 impl FenrirBuilder {
@@ -54,7 +54,12 @@ impl FenrirBuilder {
     ///     .with_authentication("foo".to_string(), "bar".to_string());
     /// ```
     pub fn with_authentication(mut self, username: String, password: String) -> FenrirBuilder {
-        self.credentials = Some((username, password));
+        use base64::{engine::general_purpose, Engine};
+
+        let b64_credentials =
+            general_purpose::STANDARD.encode(format!("{}:{}", username, password));
+
+        self.credentials = Some(b64_credentials);
         self
     }
 
@@ -124,6 +129,12 @@ impl Log for Fenrir {
         let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
         let mut request = agent.request_url("POST", &post_url);
         request = request.set("Content-Type", "application/json; charset=utf-8");
+        if self.credentials.is_some() {
+            request = request.set(
+                "Authorization",
+                format!("Basic {}", self.credentials.clone().unwrap()).as_str(),
+            );
+        }
         let _ = request.send_string(log_stream_text.as_str()).unwrap();
     }
 
