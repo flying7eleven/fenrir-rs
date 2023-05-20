@@ -5,7 +5,9 @@ fn main() {
     use log::{debug, error, info, trace, warn};
     use url::Url;
 
-    let my_loki = FenrirBuilder::new(Url::parse("http://localhost:3100").unwrap()).build();
+    let my_loki = FenrirBuilder::new(Url::parse("http://localhost:8080").unwrap())
+        .with_authentication("example".to_string(), "password".to_string())
+        .build();
 
     let _ = Dispatch::new()
         .format(|out, message, record| {
