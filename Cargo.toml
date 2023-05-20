@@ -33,6 +33,11 @@ features = ["std"]
 version = "2.6.2"
 default-features = false
 
+[dependencies.base64]
+version = "0.21.0"
+default-features = false
+features = ["std"]
+
 [dev-dependencies.fern]
 version = "0.6.2"
 default-features = false
