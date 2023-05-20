@@ -162,7 +162,7 @@ mod tests {
         assert_ne!(result.credentials, None);
         assert_eq!(
             result.credentials.unwrap(),
-            ("username".to_string(), "password".to_string())
+            "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string()
         );
     }
 }
