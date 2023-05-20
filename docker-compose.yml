@@ -26,7 +26,7 @@ services:
     image: grafana/loki:latest
     restart: always
     volumes:
-      - ./loki_config.yml:/etc/loki/local-config.yaml:ro
+      - ./docker/loki_config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "3100:3100"
@@ -50,8 +50,10 @@ services:
           type: loki
           access: proxy 
           orgId: 1
-          url: http://loki:3100
-          basicAuth: false
+          url: http://nginx:8080
+          basicAuth: true
+          basicAuthUser: example
+          basicAuthPassword: password
           isDefault: true
           version: 1
           editable: false
