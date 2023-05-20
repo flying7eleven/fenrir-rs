@@ -4,6 +4,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+- The docker example environment now also includes a nginx reverse proxy for authentication purposes
+
 ### Changed
 - Rename the `logging_level` to `level` to comply with the standard for Grafana
 

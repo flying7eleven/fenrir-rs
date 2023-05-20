@@ -28,12 +28,11 @@ services:
     volumes:
       - ./docker/loki_config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
     networks:
       - loki
 
   grafana:
+    container_name: grafana
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -46,14 +45,15 @@ services:
         cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
         apiVersion: 1
         datasources:
-        - name: Loki
+        - name: Local Loki Testing Data Source
           type: loki
           access: proxy 
           orgId: 1
           url: http://nginx:8080
           basicAuth: true
           basicAuthUser: example
-          basicAuthPassword: password
+          secureJsonData:
+            basicAuthPassword: password
           isDefault: true
           version: 1
           editable: false
