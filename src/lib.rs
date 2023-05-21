@@ -42,21 +42,9 @@ pub struct FenrirBuilder {
 }
 
 impl FenrirBuilder {
-    /// Create a new `FenrirBuilder` with all required parameters.
-    ///
-    /// # Example
-    /// ```
-    /// use url::Url;
-    /// use fenrir_rs::FenrirBuilder;
-    ///
-    /// let builder = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap());
-    /// ```
-    pub fn new(endpoint: Url) -> FenrirBuilder {
-        FenrirBuilder {
-            endpoint,
-            authentication: AuthenticationMethod::None,
-            credentials: "".to_string(),
-        }
+    pub fn endpoint(mut self, endpoint: Url) -> FenrirBuilder {
+        self.endpoint = endpoint;
+        self
     }
 
     /// Ensure our client uses the supplied credentials for authentication against the remote endpoint.
@@ -64,9 +52,10 @@ impl FenrirBuilder {
     /// # Example
     /// ```
     /// use url::Url;
-    /// use fenrir_rs::{AuthenticationMethod, FenrirBuilder};
+    /// use fenrir_rs::{AuthenticationMethod, Fenrir};
     ///
-    /// let builder = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
+    /// let builder = Fenrir::builder()
+    ///     .endpoint(Url::parse("https://loki.example.com").unwrap())
     ///     .with_authentication(AuthenticationMethod::Basic, "foo".to_string(), "bar".to_string());
     /// ```
     pub fn with_authentication(
@@ -94,15 +83,34 @@ impl FenrirBuilder {
     /// # Example
     /// ```
     /// use url::Url;
-    /// use fenrir_rs::FenrirBuilder;
+    /// use fenrir_rs::Fenrir;
     ///
-    /// let fenrir = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap()).build();
+    /// let fenrir = Fenrir::builder().endpoint(Url::parse("https://loki.example.com").unwrap()).build();
     /// ```
     pub fn build(self) -> Fenrir {
         Fenrir {
             endpoint: self.endpoint,
             authentication: self.authentication,
             credentials: self.credentials,
+        }
+    }
+}
+
+impl Fenrir {
+    /// Create a new `FenrirBuilder` with all required parameters.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder();
+    /// ```
+    pub fn builder() -> FenrirBuilder {
+        FenrirBuilder {
+            endpoint: Url::parse("http://localhost:3100").unwrap(),
+            authentication: AuthenticationMethod::None,
+            credentials: "".to_string(),
         }
     }
 }
@@ -175,19 +183,22 @@ impl Log for Fenrir {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AuthenticationMethod, FenrirBuilder};
+    use crate::{AuthenticationMethod, Fenrir};
     use url::Url;
 
     #[test]
     fn creating_an_instance_without_credentials_works_correctly() {
-        let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap()).build();
+        let result = Fenrir::builder()
+            .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .build();
         assert_eq!(result.authentication, AuthenticationMethod::None);
         assert_eq!(result.credentials, "".to_string());
     }
 
     #[test]
     fn creating_an_instance_with_credentials_works_correctly() {
-        let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
+        let result = Fenrir::builder()
+            .endpoint(Url::parse("https://loki.example.com").unwrap())
             .with_authentication(
                 AuthenticationMethod::Basic,
                 "username".to_string(),
