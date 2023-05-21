@@ -20,12 +20,7 @@ pub enum AuthenticationMethod {
 ///
 /// To create a new instance of the `Fenrir` struct use the `FenrirBuilder` struct.
 pub struct Fenrir {
-    /// The loki `endpoint` which is used to send log information to
-    endpoint: Url,
-    /// The `authentication` method to use when sending the log messages to the remote endpoint
-    authentication: AuthenticationMethod,
-    /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: String,
+    backend: UreqBackend,
 }
 
 /// The `FenrirBuilder` struct is used to create a new instance of `Fenrir`using the builder pattern.
@@ -39,6 +34,49 @@ pub struct FenrirBuilder {
     authentication: AuthenticationMethod,
     /// The `credentials` to use to authenticate against the remote `endpoint`
     credentials: String,
+}
+
+/// The `FenrirBackend` trait is used to specify the interfaces which are required for the communication
+/// with the remote endpoint.
+trait FenrirBackend {
+    /// Sends a `Streams` object to the configured remote backend.
+    fn send(&self, streams: &Streams) -> Result<(), String>;
+}
+
+struct UreqBackend {
+    /// The loki `endpoint` which is used to send log information to
+    endpoint: Url,
+    /// The `authentication` method to use when sending the log messages to the remote endpoint
+    authentication: AuthenticationMethod,
+    /// The `credentials` to use to authenticate against the remote `endpoint`
+    credentials: String,
+}
+
+impl FenrirBackend for UreqBackend {
+    fn send(&self, streams: &Streams) -> Result<(), String> {
+        use serde_json::to_string;
+        use std::time::Duration;
+        use ureq::AgentBuilder;
+
+        let log_stream_text = to_string(streams).unwrap();
+
+        let post_url = self.endpoint.clone().join("/loki/api/v1/push").unwrap();
+        let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
+        let mut request = agent.request_url("POST", &post_url);
+        request = request.set("Content-Type", "application/json; charset=utf-8");
+        match self.authentication {
+            AuthenticationMethod::None => {}
+            AuthenticationMethod::Basic => {
+                request = request.set(
+                    "Authorization",
+                    format!("Basic {}", self.credentials).as_str(),
+                );
+            }
+        }
+        let _ = request.send_string(log_stream_text.as_str()).unwrap();
+
+        Ok(())
+    }
 }
 
 impl FenrirBuilder {
@@ -89,9 +127,11 @@ impl FenrirBuilder {
     /// ```
     pub fn build(self) -> Fenrir {
         Fenrir {
-            endpoint: self.endpoint,
-            authentication: self.authentication,
-            credentials: self.credentials,
+            backend: UreqBackend {
+                endpoint: self.endpoint,
+                authentication: self.authentication,
+                credentials: self.credentials,
+            },
         }
     }
 }
@@ -132,16 +172,17 @@ impl Log for Fenrir {
     }
 
     fn log(&self, record: &Record) {
-        use serde_json::to_string;
-        use std::time::Duration;
         use std::time::{SystemTime, UNIX_EPOCH};
-        use ureq::AgentBuilder;
 
+        // we do want to ignore logs which are created by the used networking library since this
+        // would create an infinite loop
+        // TODO: this check should move into the backend implementation
         let module = record.module_path().unwrap_or("");
         if module.starts_with("ureq") || !self.enabled(record.metadata()) {
             return;
         }
 
+        // create the logging stream we want to send to loki
         let log_stream = Streams {
             streams: vec![Stream {
                 stream: HashMap::from([
@@ -158,22 +199,9 @@ impl Log for Fenrir {
                 ]],
             }],
         };
-        let log_stream_text = to_string(&log_stream).unwrap();
 
-        let post_url = self.endpoint.clone().join("/loki/api/v1/push").unwrap();
-        let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
-        let mut request = agent.request_url("POST", &post_url);
-        request = request.set("Content-Type", "application/json; charset=utf-8");
-        match self.authentication {
-            AuthenticationMethod::None => {}
-            AuthenticationMethod::Basic => {
-                request = request.set(
-                    "Authorization",
-                    format!("Basic {}", self.credentials).as_str(),
-                );
-            }
-        }
-        let _ = request.send_string(log_stream_text.as_str()).unwrap();
+        // send the log stream using the configured backend
+        self.backend.send(&log_stream).unwrap();
     }
 
     fn flush(&self) {
@@ -191,8 +219,8 @@ mod tests {
         let result = Fenrir::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
             .build();
-        assert_eq!(result.authentication, AuthenticationMethod::None);
-        assert_eq!(result.credentials, "".to_string());
+        assert_eq!(result.backend.authentication, AuthenticationMethod::None);
+        assert_eq!(result.backend.credentials, "".to_string());
     }
 
     #[test]
@@ -205,7 +233,10 @@ mod tests {
                 "password".to_string(),
             )
             .build();
-        assert_eq!(result.authentication, AuthenticationMethod::Basic);
-        assert_eq!(result.credentials, "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string());
+        assert_eq!(result.backend.authentication, AuthenticationMethod::Basic);
+        assert_eq!(
+            result.backend.credentials,
+            "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string()
+        );
     }
 }
