@@ -80,6 +80,16 @@ impl FenrirBackend for UreqBackend {
 }
 
 impl FenrirBuilder {
+    /// Set the endpoint which should be used for sending the log messages to.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///     .endpoint(Url::parse("https://loki.example.com").unwrap());
+    /// ```
     pub fn endpoint(mut self, endpoint: Url) -> FenrirBuilder {
         self.endpoint = endpoint;
         self
@@ -93,7 +103,6 @@ impl FenrirBuilder {
     /// use fenrir_rs::{AuthenticationMethod, Fenrir};
     ///
     /// let builder = Fenrir::builder()
-    ///     .endpoint(Url::parse("https://loki.example.com").unwrap())
     ///     .with_authentication(AuthenticationMethod::Basic, "foo".to_string(), "bar".to_string());
     /// ```
     pub fn with_authentication(
