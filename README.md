@@ -16,7 +16,7 @@ It does this by integrating with the log crate.
 
     ```toml
     [dependencies.fenrir-rs]
-    version = "0.1.1"
+    version = "0.2.0"
     default-features = false
     ```
 
