@@ -64,19 +64,28 @@ impl FenrirBuilder {
     /// # Example
     /// ```
     /// use url::Url;
-    /// use fenrir_rs::FenrirBuilder;
+    /// use fenrir_rs::{AuthenticationMethod, FenrirBuilder};
     ///
     /// let builder = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
-    ///     .with_authentication("foo".to_string(), "bar".to_string());
+    ///     .with_authentication(AuthenticationMethod::Basic, "foo".to_string(), "bar".to_string());
     /// ```
-    pub fn with_authentication(mut self, username: String, password: String) -> FenrirBuilder {
-        use base64::{engine::general_purpose, Engine};
+    pub fn with_authentication(
+        mut self,
+        method: AuthenticationMethod,
+        username: String,
+        password: String,
+    ) -> FenrirBuilder {
+        match method {
+            AuthenticationMethod::None => {}
+            AuthenticationMethod::Basic => {
+                use base64::{engine::general_purpose, Engine};
+                let b64_credentials =
+                    general_purpose::STANDARD.encode(format!("{}:{}", username, password));
+                self.credentials = b64_credentials;
+            }
+        }
 
-        let b64_credentials =
-            general_purpose::STANDARD.encode(format!("{}:{}", username, password));
-
-        self.authentication = AuthenticationMethod::Basic;
-        self.credentials = b64_credentials;
+        self.authentication = method;
         self
     }
 
@@ -179,7 +188,11 @@ mod tests {
     #[test]
     fn creating_an_instance_with_credentials_works_correctly() {
         let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
-            .with_authentication("username".to_string(), "password".to_string())
+            .with_authentication(
+                AuthenticationMethod::Basic,
+                "username".to_string(),
+                "password".to_string(),
+            )
             .build();
         assert_eq!(result.authentication, AuthenticationMethod::Basic);
         assert_eq!(result.credentials, "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string());

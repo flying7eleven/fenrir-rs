@@ -1,12 +1,16 @@
 fn main() {
-    use fenrir_rs::FenrirBuilder;
+    use fenrir_rs::{AuthenticationMethod, FenrirBuilder};
     use fern::Dispatch;
     use log::LevelFilter;
     use log::{debug, error, info, trace, warn};
     use url::Url;
 
     let my_loki = FenrirBuilder::new(Url::parse("http://localhost:8080").unwrap())
-        .with_authentication("example".to_string(), "password".to_string())
+        .with_authentication(
+            AuthenticationMethod::Basic,
+            "example".to_string(),
+            "password".to_string(),
+        )
         .build();
 
     let _ = Dispatch::new()
