@@ -5,14 +5,27 @@ use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;
 
-/// The `Fenrir` struct implements the communication interface with a [Loki](https://grafana.com/oss/loki/) instance.
+/// The `AuthenticationMethod` enum is used to specify the authentication method to use when
+/// sending the log messages to the remote endpoint.
+#[derive(Eq, PartialEq, Debug)]
+pub enum AuthenticationMethod {
+    /// Do not use any authentication when sending the log messages to the remote endpoint
+    None,
+    /// Use the HTTP Basic Auth when sending the log messages to the remote endpoint
+    Basic,
+}
+
+/// The `Fenrir` struct implements the communication interface with a [Loki](https://grafana.com/oss/loki/)
+/// instance.
 ///
 /// To create a new instance of the `Fenrir` struct use the `FenrirBuilder` struct.
 pub struct Fenrir {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
+    /// The `authentication` method to use when sending the log messages to the remote endpoint
+    authentication: AuthenticationMethod,
     /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: Option<String>,
+    credentials: String,
 }
 
 /// The `FenrirBuilder` struct is used to create a new instance of `Fenrir`using the builder pattern.
@@ -22,8 +35,10 @@ pub struct Fenrir {
 pub struct FenrirBuilder {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
+    /// The `authentication` method to use when sending the log messages to the remote endpoint
+    authentication: AuthenticationMethod,
     /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: Option<String>,
+    credentials: String,
 }
 
 impl FenrirBuilder {
@@ -39,7 +54,8 @@ impl FenrirBuilder {
     pub fn new(endpoint: Url) -> FenrirBuilder {
         FenrirBuilder {
             endpoint,
-            credentials: None,
+            authentication: AuthenticationMethod::None,
+            credentials: "".to_string(),
         }
     }
 
@@ -59,7 +75,8 @@ impl FenrirBuilder {
         let b64_credentials =
             general_purpose::STANDARD.encode(format!("{}:{}", username, password));
 
-        self.credentials = Some(b64_credentials);
+        self.authentication = AuthenticationMethod::Basic;
+        self.credentials = b64_credentials;
         self
     }
 
@@ -75,6 +92,7 @@ impl FenrirBuilder {
     pub fn build(self) -> Fenrir {
         Fenrir {
             endpoint: self.endpoint,
+            authentication: self.authentication,
             credentials: self.credentials,
         }
     }
@@ -129,11 +147,14 @@ impl Log for Fenrir {
         let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
         let mut request = agent.request_url("POST", &post_url);
         request = request.set("Content-Type", "application/json; charset=utf-8");
-        if self.credentials.is_some() {
-            request = request.set(
-                "Authorization",
-                format!("Basic {}", self.credentials.clone().unwrap()).as_str(),
-            );
+        match self.authentication {
+            AuthenticationMethod::None => {}
+            AuthenticationMethod::Basic => {
+                request = request.set(
+                    "Authorization",
+                    format!("Basic {}", self.credentials).as_str(),
+                );
+            }
         }
         let _ = request.send_string(log_stream_text.as_str()).unwrap();
     }
@@ -145,13 +166,14 @@ impl Log for Fenrir {
 
 #[cfg(test)]
 mod tests {
-    use crate::FenrirBuilder;
+    use crate::{AuthenticationMethod, FenrirBuilder};
     use url::Url;
 
     #[test]
     fn creating_an_instance_without_credentials_works_correctly() {
         let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap()).build();
-        assert_eq!(result.credentials, None);
+        assert_eq!(result.authentication, AuthenticationMethod::None);
+        assert_eq!(result.credentials, "".to_string());
     }
 
     #[test]
@@ -159,10 +181,7 @@ mod tests {
         let result = FenrirBuilder::new(Url::parse("https://loki.example.com").unwrap())
             .with_authentication("username".to_string(), "password".to_string())
             .build();
-        assert_ne!(result.credentials, None);
-        assert_eq!(
-            result.credentials.unwrap(),
-            "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string()
-        );
+        assert_eq!(result.authentication, AuthenticationMethod::Basic);
+        assert_eq!(result.credentials, "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string());
     }
 }
