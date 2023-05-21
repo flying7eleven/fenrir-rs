@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Rename the `logging_level` to `level` to comply with the standard for Grafana
 - Replace `ureq` with `hyper` for sending the logs to Loki
+- Reduce the minimum supported Rust version to 1.56.0
 
 ## 0.1.1 - 2023-05-12
 
