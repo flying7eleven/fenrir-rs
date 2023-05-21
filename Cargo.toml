@@ -33,11 +33,6 @@ features = ["std"]
 version = "2.6.2"
 default-features = false
 
-[dependencies.hyper]
-version = "0.14.26"
-default-features = false
-features = ["client", "http1"]
-
 [dependencies.base64]
 version = "0.21.0"
 default-features = false
