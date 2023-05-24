@@ -5,6 +5,9 @@ use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;
 
+// the globally configured logging backend to use
+static mut LOGGING_BACKEND: &dyn FenrirBackend = &NopBackend;
+
 /// The `AuthenticationMethod` enum is used to specify the authentication method to use when
 /// sending the log messages to the remote endpoint.
 #[derive(Eq, PartialEq, Debug)]
@@ -41,6 +44,15 @@ pub struct FenrirBuilder {
 trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend.
     fn send(&self, streams: &Streams) -> Result<(), String>;
+}
+
+/// The `NopBackend` is used by default and does ignore all logging messages.
+pub struct NopBackend;
+
+impl FenrirBackend for NopBackend {
+    fn send(&self, _: &Streams) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 struct UreqBackend {
