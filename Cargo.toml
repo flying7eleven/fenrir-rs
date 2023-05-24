@@ -47,4 +47,7 @@ version = "2.1.0"
 default-features = false
 
 [[example]]
+name = "simple-logging"
+
+[[example]]
 name = "simple-fern-logging"
