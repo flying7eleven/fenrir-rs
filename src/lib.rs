@@ -1,5 +1,8 @@
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "ureq")]
+mod ureq;
+
 use log::{Log, Metadata, Record};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -48,42 +51,6 @@ pub struct NopBackend;
 
 impl FenrirBackend for NopBackend {
     fn send(&self, _: &Streams) -> Result<(), String> {
-        Ok(())
-    }
-}
-
-struct UreqBackend {
-    /// The loki `endpoint` which is used to send log information to
-    endpoint: Url,
-    /// The `authentication` method to use when sending the log messages to the remote endpoint
-    authentication: AuthenticationMethod,
-    /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: String,
-}
-
-impl FenrirBackend for UreqBackend {
-    fn send(&self, streams: &Streams) -> Result<(), String> {
-        use serde_json::to_string;
-        use std::time::Duration;
-        use ureq::AgentBuilder;
-
-        let log_stream_text = to_string(streams).unwrap();
-
-        let post_url = self.endpoint.clone().join("/loki/api/v1/push").unwrap();
-        let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
-        let mut request = agent.request_url("POST", &post_url);
-        request = request.set("Content-Type", "application/json; charset=utf-8");
-        match self.authentication {
-            AuthenticationMethod::None => {}
-            AuthenticationMethod::Basic => {
-                request = request.set(
-                    "Authorization",
-                    format!("Basic {}", self.credentials).as_str(),
-                );
-            }
-        }
-        let _ = request.send_string(log_stream_text.as_str()).unwrap();
-
         Ok(())
     }
 }
@@ -145,11 +112,7 @@ impl FenrirBuilder {
     /// ```
     pub fn build(self) -> Fenrir {
         Fenrir {
-            backend: Box::new(UreqBackend {
-                endpoint: self.endpoint,
-                authentication: self.authentication,
-                credentials: self.credentials,
-            }),
+            backend: Box::new(NopBackend {}),
         }
     }
 }
