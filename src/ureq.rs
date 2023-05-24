@@ -1,7 +1,7 @@
 use crate::{AuthenticationMethod, FenrirBackend, Streams};
 use url::Url;
 
-struct UreqBackend {
+pub struct UreqBackend {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
     /// The `authentication` method to use when sending the log messages to the remote endpoint

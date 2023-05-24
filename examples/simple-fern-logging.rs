@@ -1,11 +1,14 @@
+use fenrir_rs::FenrirBuilder;
+
 fn main() {
+    use fenrir_rs::ureq::UreqBackend;
     use fenrir_rs::{AuthenticationMethod, Fenrir};
     use fern::Dispatch;
     use log::LevelFilter;
     use log::{debug, error, info, trace, warn};
     use url::Url;
 
-    let my_loki = Fenrir::builder()
+    let my_loki: Fenrir<UreqBackend> = Fenrir::builder()
         .endpoint(Url::parse("http://localhost:8080").unwrap())
         .with_authentication(
             AuthenticationMethod::Basic,

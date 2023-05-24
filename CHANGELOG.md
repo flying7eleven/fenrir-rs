@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add a new example for the use of the library without frameworks like `fern`
 - Add the `NopBackend` for dropping all messages and not sending them to any Loki instance
+- Add a feature for selecting the `ureq` network backend
 
 ### Changed
 - Refactor the code to be able to deal with different network backends for sending information to a Loki instance

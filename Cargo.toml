@@ -52,6 +52,8 @@ ureq = ["dep:ureq"]
 
 [[example]]
 name = "simple-logging"
+required-features = ["ureq"]
 
 [[example]]
 name = "simple-fern-logging"
+required-features = ["ureq"]
