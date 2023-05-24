@@ -5,9 +5,6 @@ use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;
 
-// the globally configured logging backend to use
-static mut LOGGING_BACKEND: &dyn FenrirBackend = &NopBackend;
-
 /// The `AuthenticationMethod` enum is used to specify the authentication method to use when
 /// sending the log messages to the remote endpoint.
 #[derive(Eq, PartialEq, Debug)]
@@ -23,7 +20,7 @@ pub enum AuthenticationMethod {
 ///
 /// To create a new instance of the `Fenrir` struct use the `FenrirBuilder` struct.
 pub struct Fenrir {
-    backend: UreqBackend,
+    backend: Box<dyn FenrirBackend + Send + Sync>,
 }
 
 /// The `FenrirBuilder` struct is used to create a new instance of `Fenrir`using the builder pattern.
@@ -148,11 +145,11 @@ impl FenrirBuilder {
     /// ```
     pub fn build(self) -> Fenrir {
         Fenrir {
-            backend: UreqBackend {
+            backend: Box::new(UreqBackend {
                 endpoint: self.endpoint,
                 authentication: self.authentication,
                 credentials: self.credentials,
-            },
+            }),
         }
     }
 }
