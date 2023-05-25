@@ -22,17 +22,18 @@ default-features = false
 [dependencies.serde]
 version = "1.0.162"
 default-features = false
-features = ["derive"]
-
-[dependencies.serde_json]
-version = "1.0.96"
-default-features = false
-features = ["std"]
+features = ["std", "derive"]
 
 [dependencies.base64]
 version = "0.21.0"
 default-features = false
 features = ["std"]
+
+[dependencies.serde_json]
+version = "1.0.96"
+default-features = false
+features = ["std"]
+optional = true
 
 [dependencies.ureq]
 version = "2.6.2"
@@ -49,11 +50,12 @@ default-features = false
 
 [features]
 ureq = ["dep:ureq"]
+json = ["dep:serde_json"]
 
 [[example]]
 name = "simple-logging"
-required-features = ["ureq"]
+required-features = ["ureq", "json"]
 
 [[example]]
 name = "simple-fern-logging"
-required-features = ["ureq"]
+required-features = ["ureq", "json"]

@@ -1,5 +1,3 @@
-use fenrir_rs::FenrirBuilder;
-
 fn main() {
     use fenrir_rs::ureq::UreqBackend;
     use fenrir_rs::{AuthenticationMethod, Fenrir};
