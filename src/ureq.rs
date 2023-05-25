@@ -10,8 +10,18 @@ pub struct UreqBackend {
     credentials: String,
 }
 
+#[cfg(not(all(feature = "json")))]
+#[inline]
+pub fn to_string<T>(_: &T) -> Result<String, ()>
+where
+    T: ?Sized + serde::Serialize,
+{
+    Ok("".to_string())
+}
+
 impl FenrirBackend for UreqBackend {
     fn send(&self, streams: &Streams) -> Result<(), String> {
+        #[cfg(feature = "json")]
         use serde_json::to_string;
         use std::time::Duration;
         use ureq::AgentBuilder;

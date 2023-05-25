@@ -8,9 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add a new example for the use of the library without frameworks like `fern`
 - Add the `NopBackend` for dropping all messages and not sending them to any Loki instance
 - Add a feature for selecting the `ureq` network backend
+- Add a feature for selecting the `json` as a serialization method
 
 ### Changed
 - Refactor the code to be able to deal with different network backends for sending information to a Loki instance
+- Refactor the code to be able to switch the serialization type for the send messages
 
 ## 0.2.0 - 2023-05-21
 
