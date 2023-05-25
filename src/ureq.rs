@@ -1,6 +1,7 @@
 use crate::{AuthenticationMethod, FenrirBackend, Streams};
 use url::Url;
 
+#[derive(Copy, Clone)]
 pub struct UreqBackend {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
@@ -44,5 +45,52 @@ impl FenrirBackend for UreqBackend {
         let _ = request.send_string(log_stream_text.as_str()).unwrap();
 
         Ok(())
+    }
+
+    fn authentication_method(&self) -> AuthenticationMethod {
+        self.authentication.clone()
+    }
+
+    fn credentials(&self) -> Option<String> {
+        if self.credentials.len() > 0 {
+            return Some(self.credentials.clone());
+        }
+        None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ureq::UreqBackend;
+    use crate::{AuthenticationMethod, Fenrir};
+    use url::Url;
+
+    #[test]
+    fn creating_a_ureq_instance_without_credentials_works_correctly() {
+        let result = Fenrir::<UreqBackend>::builder()
+            .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .build();
+        assert_eq!(
+            result.backend.authentication_method(),
+            AuthenticationMethod::None
+        );
+        assert_eq!(result.backend.credentials(), None);
+    }
+
+    #[test]
+    fn creating_a_ureq_instance_with_credentials_works_correctly() {
+        let result = Fenrir::<UreqBackend>::builder()
+            .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .with_authentication(
+                AuthenticationMethod::Basic,
+                "username".to_string(),
+                "password".to_string(),
+            )
+            .build();
+        assert_eq!(
+            result.backend.authentication_method(),
+            AuthenticationMethod::None
+        );
+        assert_eq!(result.backend.credentials(), None);
     }
 }

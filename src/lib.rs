@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 
+pub mod noop;
 #[cfg(feature = "ureq")]
 pub mod ureq;
 
@@ -49,15 +50,12 @@ pub struct FenrirBuilder<T: FenrirBackend> {
 pub trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend.
     fn send(&self, streams: &Streams) -> Result<(), String>;
-}
 
-/// The `NopBackend` is used by default and does ignore all logging messages.
-pub struct NopBackend;
+    /// Get the configured `AuthenticationMethod` for the backend.
+    fn authentication_method(&self) -> AuthenticationMethod;
 
-impl FenrirBackend for NopBackend {
-    fn send(&self, _: &Streams) -> Result<(), String> {
-        Ok(())
-    }
+    /// Get the configured credentials or `None` if no credentials are configured.
+    fn credentials(&self) -> Option<String>;
 }
 
 impl<T: FenrirBackend> FenrirBuilder<T> {
@@ -116,6 +114,8 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// let fenrir = Fenrir::builder().endpoint(Url::parse("https://loki.example.com").unwrap()).build();
     /// ```
     pub fn build(self) -> Fenrir<T> {
+        use crate::noop::NopBackend;
+
         Fenrir {
             backend: Box::new(NopBackend {}),
             phantom: PhantomData,
@@ -194,37 +194,5 @@ impl<T: FenrirBackend + Send + Sync> Log for Fenrir<T> {
 
     fn flush(&self) {
         // TODO: implement the actual flushing
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{AuthenticationMethod, Fenrir};
-    use url::Url;
-
-    #[test]
-    fn creating_an_instance_without_credentials_works_correctly() {
-        let result = Fenrir::builder()
-            .endpoint(Url::parse("https://loki.example.com").unwrap())
-            .build();
-        assert_eq!(result.backend.authentication, AuthenticationMethod::None);
-        assert_eq!(result.backend.credentials, "".to_string());
-    }
-
-    #[test]
-    fn creating_an_instance_with_credentials_works_correctly() {
-        let result = Fenrir::builder()
-            .endpoint(Url::parse("https://loki.example.com").unwrap())
-            .with_authentication(
-                AuthenticationMethod::Basic,
-                "username".to_string(),
-                "password".to_string(),
-            )
-            .build();
-        assert_eq!(result.backend.authentication, AuthenticationMethod::Basic);
-        assert_eq!(
-            result.backend.credentials,
-            "dXNlcm5hbWU6cGFzc3dvcmQ=".to_string()
-        );
     }
 }
