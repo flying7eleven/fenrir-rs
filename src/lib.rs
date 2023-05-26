@@ -12,7 +12,7 @@ use url::Url;
 
 /// The `AuthenticationMethod` enum is used to specify the authentication method to use when
 /// sending the log messages to the remote endpoint.
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum AuthenticationMethod {
     /// Do not use any authentication when sending the log messages to the remote endpoint
     None,

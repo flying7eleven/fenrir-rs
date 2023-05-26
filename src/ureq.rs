@@ -1,7 +1,7 @@
 use crate::{AuthenticationMethod, FenrirBackend, Streams};
 use url::Url;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct UreqBackend {
     /// The loki `endpoint` which is used to send log information to
     endpoint: Url,
