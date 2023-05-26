@@ -1,9 +1,9 @@
 use crate::{AuthenticationMethod, FenrirBackend, Streams};
 
-/// The `NopBackend` is used by default and does ignore all logging messages.
-pub struct NopBackend;
+/// The `NoopBackend` is used by default and does ignore all logging messages.
+pub struct NoopBackend;
 
-impl FenrirBackend for NopBackend {
+impl FenrirBackend for NoopBackend {
     fn send(&self, _: &Streams) -> Result<(), String> {
         Ok(())
     }
@@ -19,13 +19,13 @@ impl FenrirBackend for NopBackend {
 
 #[cfg(test)]
 mod tests {
-    use crate::noop::NopBackend;
+    use crate::noop::NoopBackend;
     use crate::{AuthenticationMethod, Fenrir};
     use url::Url;
 
     #[test]
     fn creating_a_noop_instance_without_credentials_works_correctly() {
-        let result = Fenrir::<NopBackend>::builder()
+        let result = Fenrir::<NoopBackend>::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
             .build();
         assert_eq!(
@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn creating_a_noop_instance_with_credentials_works_correctly() {
-        let result = Fenrir::<NopBackend>::builder()
+        let result = Fenrir::<NoopBackend>::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
             .with_authentication(
                 AuthenticationMethod::Basic,

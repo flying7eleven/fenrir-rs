@@ -65,9 +65,9 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
-    /// use fenrir_rs::noop::NopBackend;
+    /// use fenrir_rs::noop::NoopBackend;
     ///
-    /// let builder = Fenrir::<NopBackend>::builder()
+    /// let builder = Fenrir::<NoopBackend>::builder()
     ///     .endpoint(Url::parse("https://loki.example.com").unwrap());
     /// ```
     pub fn endpoint(mut self, endpoint: Url) -> FenrirBuilder<T> {
@@ -81,9 +81,9 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::{AuthenticationMethod, Fenrir};
-    /// use fenrir_rs::noop::NopBackend;
+    /// use fenrir_rs::noop::NoopBackend;
     ///
-    /// let builder = Fenrir::<NopBackend>::builder()
+    /// let builder = Fenrir::<NoopBackend>::builder()
     ///     .with_authentication(AuthenticationMethod::Basic, "foo".to_string(), "bar".to_string());
     /// ```
     pub fn with_authentication(
@@ -112,15 +112,15 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
-    /// use fenrir_rs::noop::NopBackend;
+    /// use fenrir_rs::noop::NoopBackend;
     ///
-    /// let fenrir = Fenrir::<NopBackend>::builder().endpoint(Url::parse("https://loki.example.com").unwrap()).build();
+    /// let fenrir = Fenrir::<NoopBackend>::builder().endpoint(Url::parse("https://loki.example.com").unwrap()).build();
     /// ```
     pub fn build(self) -> Fenrir<T> {
-        use crate::noop::NopBackend;
+        use crate::noop::NoopBackend;
 
         Fenrir {
-            backend: Box::new(NopBackend {}),
+            backend: Box::new(NoopBackend {}),
             phantom: PhantomData,
         }
     }
@@ -133,9 +133,9 @@ impl<T: FenrirBackend> Fenrir<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
-    /// use fenrir_rs::noop::NopBackend;
+    /// use fenrir_rs::noop::NoopBackend;
     ///
-    /// let builder = Fenrir::<NopBackend>::builder();
+    /// let builder = Fenrir::<NoopBackend>::builder();
     /// ```
     pub fn builder() -> FenrirBuilder<T> {
         FenrirBuilder {
