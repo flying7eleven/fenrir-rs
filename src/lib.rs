@@ -4,6 +4,8 @@ pub mod noop;
 #[cfg(feature = "ureq")]
 pub mod ureq;
 
+#[cfg(feature = "structured_logging")]
+use log::kv::{Source, Visitor};
 use log::{Log, Metadata, Record};
 use serde::Serialize;
 use std::collections::HashMap;
@@ -107,13 +109,30 @@ impl Log for Fenrir {
             return;
         }
 
+        //
+        let mut labels = HashMap::from([
+            ("logging_framework".to_string(), "fenrir".to_string()),
+            ("level".to_string(), record.level().to_string()),
+        ]);
+
+        //
+        #[cfg(feature = "structured_logging")]
+        {
+            let kv = record.key_values();
+            let mut visitor = LokiVisitor::new(kv.count());
+            let values = visitor.read_kv(kv).unwrap();
+
+            labels.extend(
+                values
+                    .iter()
+                    .map(|(key, value)| (key.to_string(), value.to_string())),
+            );
+        }
+
         // create the logging stream we want to send to loki
         let log_stream = Streams {
             streams: vec![Stream {
-                stream: HashMap::from([
-                    ("logging_framework".to_string(), "fenrir".to_string()),
-                    ("level".to_string(), record.level().to_string()),
-                ]),
+                stream: labels,
                 values: vec![vec![
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
@@ -277,6 +296,42 @@ impl FenrirBuilder {
 
 pub(crate) fn noop_serializer(_: &Streams) -> Result<String, String> {
     Ok("".to_string())
+}
+
+#[cfg(feature = "structured_logging")]
+struct LokiVisitor<'kvs> {
+    values: HashMap<log::kv::Key<'kvs>, log::kv::Value<'kvs>>,
+}
+
+#[cfg(feature = "structured_logging")]
+impl<'kvs> LokiVisitor<'kvs> {
+    pub fn new(count: usize) -> Self {
+        Self {
+            values: HashMap::with_capacity(count),
+        }
+    }
+
+    pub fn read_kv(
+        &'kvs mut self,
+        source: &'kvs dyn Source,
+    ) -> Result<&HashMap<log::kv::Key<'kvs>, log::kv::Value<'kvs>>, log::kv::Error> {
+        for _ in 0..source.count() {
+            source.visit(self)?;
+        }
+        Ok(&self.values)
+    }
+}
+
+#[cfg(feature = "structured_logging")]
+impl<'kvs> Visitor<'kvs> for LokiVisitor<'kvs> {
+    fn visit_pair(
+        &mut self,
+        key: log::kv::Key<'kvs>,
+        value: log::kv::Value<'kvs>,
+    ) -> Result<(), log::kv::Error> {
+        self.values.insert(key, value);
+        Ok(())
+    }
 }
 
 #[derive(Serialize)]
