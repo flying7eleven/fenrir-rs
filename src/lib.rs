@@ -293,23 +293,28 @@ impl FenrirBuilder {
     }
 }
 
+/// TODO: document this
 pub(crate) fn noop_serializer(_: &Streams) -> Result<String, String> {
     Ok("".to_string())
 }
 
+/// TODO: document this
 #[cfg(feature = "structured_logging")]
 struct LokiVisitor<'kvs> {
     values: HashMap<log::kv::Key<'kvs>, log::kv::Value<'kvs>>,
 }
 
+/// TODO: document this
 #[cfg(feature = "structured_logging")]
 impl<'kvs> LokiVisitor<'kvs> {
+    /// TODO: document this
     pub fn new(count: usize) -> Self {
         Self {
             values: HashMap::with_capacity(count),
         }
     }
 
+    /// TODO: document this
     pub fn read_kv(
         &'kvs mut self,
         source: &'kvs dyn Source,
@@ -321,6 +326,7 @@ impl<'kvs> LokiVisitor<'kvs> {
     }
 }
 
+/// TODO: document this
 #[cfg(feature = "structured_logging")]
 impl<'kvs> Visitor<'kvs> for LokiVisitor<'kvs> {
     fn visit_pair(
@@ -333,13 +339,18 @@ impl<'kvs> Visitor<'kvs> for LokiVisitor<'kvs> {
     }
 }
 
+/// TODO: document this
 #[derive(Serialize)]
 pub(crate) struct Stream {
+    /// TODO: document this
     pub(crate) stream: HashMap<String, String>,
+    /// TODO: document this
     pub(crate) values: Vec<Vec<String>>,
 }
 
+/// TODO: document this
 #[derive(Serialize)]
 pub(crate) struct Streams {
+    /// TODO: document this
     pub(crate) streams: Vec<Stream>,
 }
