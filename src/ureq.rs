@@ -1,4 +1,4 @@
-use crate::{AuthenticationMethod, FenrirBackend, Streams};
+use crate::{AuthenticationMethod, FenrirBackend, SerializationFn, Streams};
 use std::any::TypeId;
 use url::Url;
 
@@ -11,23 +11,12 @@ pub(crate) struct UreqBackend {
     pub(crate) credentials: String,
 }
 
-#[cfg(not(all(feature = "json")))]
-#[inline]
-pub fn to_string<T>(_: &T) -> Result<String, ()>
-where
-    T: ?Sized + serde::Serialize,
-{
-    Ok("".to_string())
-}
-
 impl FenrirBackend for UreqBackend {
-    fn send(&self, streams: &Streams) -> Result<(), String> {
-        #[cfg(feature = "json")]
-        use serde_json::to_string;
+    fn send(&self, streams: &Streams, serializer: SerializationFn) -> Result<(), String> {
         use std::time::Duration;
         use ureq::AgentBuilder;
 
-        let log_stream_text = to_string(streams).unwrap();
+        let log_stream_text = serializer(streams).unwrap();
 
         let post_url = self.endpoint.clone().join("/loki/api/v1/push").unwrap();
         let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();

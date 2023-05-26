@@ -1,5 +1,5 @@
 fn main() {
-    use fenrir_rs::{AuthenticationMethod, Fenrir, NetworkingBackend};
+    use fenrir_rs::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
     use log::{debug, error, info, set_boxed_logger, set_max_level, trace, warn, LevelFilter};
     use url::Url;
 
@@ -11,6 +11,7 @@ fn main() {
             "example".to_string(),
             "password".to_string(),
         )
+        .format(SerializationFormat::Json)
         .build();
 
     // set the actual logger for the facade

@@ -1,5 +1,5 @@
 fn main() {
-    use fenrir_rs::{AuthenticationMethod, Fenrir, NetworkingBackend};
+    use fenrir_rs::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
     use fern::Dispatch;
     use log::LevelFilter;
     use log::{debug, error, info, trace, warn};
@@ -13,6 +13,7 @@ fn main() {
             "example".to_string(),
             "password".to_string(),
         )
+        .format(SerializationFormat::Json)
         .build();
 
     let _ = Dispatch::new()

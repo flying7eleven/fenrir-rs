@@ -30,11 +30,25 @@ pub enum NetworkingBackend {
     Ureq,
 }
 
+/// The `SerializationFormat` is used to configure the format to which the logging messages should
+/// be serialized to before sending them to the Loki endpoint.
+pub enum SerializationFormat {
+    /// Do not serialize the data at all
+    None,
+
+    /// Use JSON as the serialization format
+    #[cfg(feature = "json")]
+    Json,
+}
+
+/// The function definition which is used to serialize the logging messages for Loki
+pub(crate) type SerializationFn = fn(&Streams) -> Result<String, String>;
+
 /// The `FenrirBackend` trait is used to specify the interfaces which are required for the communication
 /// with the remote endpoint.
 pub(crate) trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend
-    fn send(&self, streams: &Streams) -> Result<(), String>;
+    fn send(&self, streams: &Streams, serializer: SerializationFn) -> Result<(), String>;
 
     /// Query the `TypeId` of the implementation of this trait
     fn internal_type(&self) -> std::any::TypeId;
@@ -52,6 +66,7 @@ pub(crate) trait FenrirBackend {
 /// To create a new instance of the `Fenrir` struct use the `FenrirBuilder` struct.
 pub struct Fenrir {
     backend: Box<dyn FenrirBackend + Send + Sync>,
+    serializer: SerializationFn,
 }
 
 impl Fenrir {
@@ -70,6 +85,7 @@ impl Fenrir {
             endpoint: Url::parse("http://localhost:3100").unwrap(),
             authentication: AuthenticationMethod::None,
             network_backend: NetworkingBackend::None,
+            serialization_format: SerializationFormat::None,
             credentials: "".to_string(),
         }
     }
@@ -110,7 +126,7 @@ impl Log for Fenrir {
         };
 
         // send the log stream using the configured backend
-        self.backend.send(&log_stream).unwrap();
+        self.backend.send(&log_stream, self.serializer).unwrap();
     }
 
     fn flush(&self) {
@@ -127,8 +143,10 @@ pub struct FenrirBuilder {
     endpoint: Url,
     /// The `authentication` method to use when sending the log messages to the remote endpoint
     authentication: AuthenticationMethod,
-    /// TODO
+    /// The `network_backend` which should be used for the network requests
     network_backend: NetworkingBackend,
+    /// The `serialization_format´ used for the logging messages
+    serialization_format: SerializationFormat,
     /// The `credentials` to use to authenticate against the remote `endpoint`
     credentials: String,
 }
@@ -194,6 +212,22 @@ impl FenrirBuilder {
         self
     }
 
+    /// Select the format which should be used for serializing the logging messages before sending
+    /// them to the configured Loki endpoint.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::{SerializationFormat, Fenrir};
+    ///
+    /// let builder = Fenrir::builder()
+    ///     .format(SerializationFormat::None);
+    /// ```
+    pub fn format(mut self, format: SerializationFormat) -> FenrirBuilder {
+        self.serialization_format = format;
+        self
+    }
+
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling `build()`.
     ///
     /// # Example
@@ -223,11 +257,26 @@ impl FenrirBuilder {
             }),
         };
 
+        // determine the serialization function to use
+        let serializer = match self.serialization_format {
+            SerializationFormat::None => noop_serializer,
+
+            #[cfg(feature = "json")]
+            SerializationFormat::Json => |data: &Streams| -> Result<String, String> {
+                serde_json::to_string(data).map_err(|error| error.to_string())
+            },
+        };
+
         // create and retun the actual backend
         Fenrir {
             backend: network_backend,
+            serializer,
         }
     }
+}
+
+pub(crate) fn noop_serializer(_: &Streams) -> Result<String, String> {
+    Ok("".to_string())
 }
 
 #[derive(Serialize)]
