@@ -65,8 +65,9 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
+    /// use fenrir_rs::noop::NopBackend;
     ///
-    /// let builder = Fenrir::builder()
+    /// let builder = Fenrir::<NopBackend>::builder()
     ///     .endpoint(Url::parse("https://loki.example.com").unwrap());
     /// ```
     pub fn endpoint(mut self, endpoint: Url) -> FenrirBuilder<T> {
@@ -80,8 +81,9 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::{AuthenticationMethod, Fenrir};
+    /// use fenrir_rs::noop::NopBackend;
     ///
-    /// let builder = Fenrir::builder()
+    /// let builder = Fenrir::<NopBackend>::builder()
     ///     .with_authentication(AuthenticationMethod::Basic, "foo".to_string(), "bar".to_string());
     /// ```
     pub fn with_authentication(
@@ -110,8 +112,9 @@ impl<T: FenrirBackend> FenrirBuilder<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
+    /// use fenrir_rs::noop::NopBackend;
     ///
-    /// let fenrir = Fenrir::builder().endpoint(Url::parse("https://loki.example.com").unwrap()).build();
+    /// let fenrir = Fenrir::<NopBackend>::builder().endpoint(Url::parse("https://loki.example.com").unwrap()).build();
     /// ```
     pub fn build(self) -> Fenrir<T> {
         use crate::noop::NopBackend;
@@ -130,8 +133,9 @@ impl<T: FenrirBackend> Fenrir<T> {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
+    /// use fenrir_rs::noop::NopBackend;
     ///
-    /// let builder = Fenrir::builder();
+    /// let builder = Fenrir::<NopBackend>::builder();
     /// ```
     pub fn builder() -> FenrirBuilder<T> {
         FenrirBuilder {
