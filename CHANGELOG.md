@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 - Refactor the code to be able to deal with different network backends for sending information to a Loki instance
 - Refactor the code to be able to switch the serialization type for the send messages
+- Increase the minimum supported Rust version to 1.60.0
 
 ## 0.2.0 - 2023-05-21
 
