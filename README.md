@@ -33,7 +33,7 @@ docker compose up -d
 After the containers have started, you can visit [http://localhost:3000/explore](http://localhost:3000/explore) to query messages in your local Loki instance.
 
 ## Minimum Supported Rust Version (MSRV)
-The MSRV for this tool ist `1.57.0` since it uses rust 2021 edition features.
+The MSRV for this tool ist `1.60.0`.
 
 ## License
 This project is licensed under the MIT License.
