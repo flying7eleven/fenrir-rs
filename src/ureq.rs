@@ -1,14 +1,14 @@
 use crate::{AuthenticationMethod, FenrirBackend, Streams};
+use std::any::TypeId;
 use url::Url;
 
-#[derive(Clone)]
-pub struct UreqBackend {
+pub(crate) struct UreqBackend {
     /// The loki `endpoint` which is used to send log information to
-    endpoint: Url,
+    pub(crate) endpoint: Url,
     /// The `authentication` method to use when sending the log messages to the remote endpoint
-    authentication: AuthenticationMethod,
+    pub(crate) authentication: AuthenticationMethod,
     /// The `credentials` to use to authenticate against the remote `endpoint`
-    credentials: String,
+    pub(crate) credentials: String,
 }
 
 #[cfg(not(all(feature = "json")))]
@@ -47,6 +47,12 @@ impl FenrirBackend for UreqBackend {
         Ok(())
     }
 
+    fn internal_type(&self) -> TypeId {
+        use std::any::Any;
+
+        TypeId::of::<Self>().type_id()
+    }
+
     fn authentication_method(&self) -> AuthenticationMethod {
         self.authentication.clone()
     }
@@ -62,25 +68,32 @@ impl FenrirBackend for UreqBackend {
 #[cfg(test)]
 mod tests {
     use crate::ureq::UreqBackend;
-    use crate::{AuthenticationMethod, Fenrir};
+    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend};
+    use std::any::{Any, TypeId};
     use url::Url;
 
     #[test]
     fn creating_a_ureq_instance_without_credentials_works_correctly() {
-        let result = Fenrir::<UreqBackend>::builder()
+        let result = Fenrir::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .network(NetworkingBackend::Ureq)
             .build();
         assert_eq!(
             result.backend.authentication_method(),
             AuthenticationMethod::None
         );
         assert_eq!(result.backend.credentials(), None);
+        assert_eq!(
+            result.backend.internal_type(),
+            TypeId::of::<UreqBackend>().type_id()
+        );
     }
 
     #[test]
     fn creating_a_ureq_instance_with_credentials_works_correctly() {
-        let result = Fenrir::<UreqBackend>::builder()
+        let result = Fenrir::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .network(NetworkingBackend::Ureq)
             .with_authentication(
                 AuthenticationMethod::Basic,
                 "username".to_string(),
@@ -89,8 +102,15 @@ mod tests {
             .build();
         assert_eq!(
             result.backend.authentication_method(),
-            AuthenticationMethod::None
+            AuthenticationMethod::Basic
         );
-        assert_eq!(result.backend.credentials(), None);
+        assert_eq!(
+            result.backend.credentials(),
+            Some("dXNlcm5hbWU6cGFzc3dvcmQ=".to_string())
+        );
+        assert_eq!(
+            result.backend.internal_type(),
+            TypeId::of::<UreqBackend>().type_id()
+        );
     }
 }
