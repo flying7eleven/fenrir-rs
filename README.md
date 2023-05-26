@@ -16,8 +16,8 @@ It does this by integrating with the log crate.
 
     ```toml
     [dependencies.fenrir-rs]
-    version = "0.2.0"
-    default-features = false
+    version = "0.3.0"
+    features = ["ureq", "json"]
     ```
 
 3. Use it 😉
