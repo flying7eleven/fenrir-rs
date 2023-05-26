@@ -2,7 +2,7 @@ use crate::{AuthenticationMethod, FenrirBackend, SerializationFn, Streams};
 use std::any::TypeId;
 
 /// The `NoopBackend` is used by default and does ignore all logging messages.
-pub struct NoopBackend;
+pub(crate) struct NoopBackend;
 
 impl FenrirBackend for NoopBackend {
     fn send(&self, _: &Streams, _: SerializationFn) -> Result<(), String> {

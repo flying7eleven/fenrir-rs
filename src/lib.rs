@@ -78,7 +78,6 @@ impl Fenrir {
     /// ```
     /// use url::Url;
     /// use fenrir_rs::Fenrir;
-    /// use fenrir_rs::noop::NoopBackend;
     ///
     /// let builder = Fenrir::builder();
     /// ```
