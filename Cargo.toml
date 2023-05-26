@@ -51,6 +51,7 @@ default-features = false
 [features]
 ureq = ["dep:ureq"]
 json = ["dep:serde_json"]
+structured_logging = ["log/kv_unstable_std"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -62,3 +63,7 @@ required-features = ["ureq", "json"]
 [[example]]
 name = "simple-fern-logging"
 required-features = ["ureq", "json"]
+
+[[example]]
+name = "structured-logging"
+required-features = ["ureq", "json", "structured_logging"]
