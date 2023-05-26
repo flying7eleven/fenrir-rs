@@ -52,6 +52,9 @@ default-features = false
 ureq = ["dep:ureq"]
 json = ["dep:serde_json"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [[example]]
 name = "simple-logging"
 required-features = ["ureq", "json"]
