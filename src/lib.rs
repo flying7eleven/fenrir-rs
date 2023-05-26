@@ -19,19 +19,20 @@ pub enum AuthenticationMethod {
     Basic,
 }
 
-/// TODO
+/// The `NetworkingBackend` defines all possible networking backends which can be used within
+/// the crate.
 pub enum NetworkingBackend {
-    /// TODO
+    /// The `None` network backend does exactly what it says: it does nothing at all
     None,
 
-    /// TODO
+    /// The `Ureq` backend uses the `ureq` library for network requests
     #[cfg(feature = "ureq")]
     Ureq,
 }
 
 /// The `FenrirBackend` trait is used to specify the interfaces which are required for the communication
 /// with the remote endpoint.
-pub trait FenrirBackend {
+pub(crate) trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend
     fn send(&self, streams: &Streams) -> Result<(), String>;
 
@@ -229,19 +230,13 @@ impl FenrirBuilder {
     }
 }
 
-/// TODO
 #[derive(Serialize)]
-pub struct Stream {
-    /// TODO
-    pub stream: HashMap<String, String>,
-
-    /// TODO
-    pub values: Vec<Vec<String>>,
+pub(crate) struct Stream {
+    pub(crate) stream: HashMap<String, String>,
+    pub(crate) values: Vec<Vec<String>>,
 }
 
-/// TODO
 #[derive(Serialize)]
-pub struct Streams {
-    /// TODO
-    pub streams: Vec<Stream>,
+pub(crate) struct Streams {
+    pub(crate) streams: Vec<Stream>,
 }
