@@ -16,6 +16,7 @@ fn main() {
         .format(SerializationFormat::Json)
         .include_level()
         .include_framework()
+        .tag("service", "simple-fern-logging")
         .build();
 
     let _ = Dispatch::new()

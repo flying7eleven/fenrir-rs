@@ -14,6 +14,7 @@ fn main() {
         .format(SerializationFormat::Json)
         .include_level()
         .include_framework()
+        .tag("service", "simple-logging")
         .build();
 
     // set the actual logger for the facade

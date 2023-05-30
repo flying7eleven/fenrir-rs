@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 - Add an option to the builder to enable settings the `logging_framework` tag for all messages
 - Add an option to the builder to enable settings the `level` tag for all messages
+- Add an option for adding custom tags to all messages (e.g. for adding the application or service name)
 
 ### Fixed
 - Fix a linting warning in case the `structured_logging` feature was not selected

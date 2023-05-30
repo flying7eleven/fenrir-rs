@@ -68,6 +68,7 @@ pub(crate) trait FenrirBackend {
 /// To create a new instance of the `Fenrir` struct use the `FenrirBuilder` struct.
 pub struct Fenrir {
     backend: Box<dyn FenrirBackend + Send + Sync>,
+    additional_tags: HashMap<String, String>,
     serializer: SerializationFn,
     include_level: bool,
     include_framework: bool,
@@ -89,6 +90,7 @@ impl Fenrir {
             authentication: AuthenticationMethod::None,
             network_backend: NetworkingBackend::None,
             serialization_format: SerializationFormat::None,
+            additional_tags: HashMap::new(),
             credentials: "".to_string(),
             include_level: false,
             include_framework: false,
@@ -122,6 +124,9 @@ impl Log for Fenrir {
         if self.include_level {
             labels.insert("level".to_string(), record.level().to_string());
         }
+
+        // add the additional tags to the labels (this might overwrite existing labels)
+        labels.extend(self.additional_tags.clone());
 
         // if structured logging is enabled, add the labels which were attached at the single entries
         #[cfg(feature = "structured_logging")]
@@ -174,6 +179,8 @@ pub struct FenrirBuilder {
     network_backend: NetworkingBackend,
     /// The `serialization_format´ used for the logging messages
     serialization_format: SerializationFormat,
+    /// A map of additional tags which should be attached to all log messages
+    additional_tags: HashMap<String, String>,
     /// The `credentials` to use to authenticate against the remote `endpoint`
     credentials: String,
     /// If set to `true`, the logging level is included as a tag
@@ -259,6 +266,25 @@ impl FenrirBuilder {
         self
     }
 
+    /// Add an additional tag to all logging messages which are sent to Loki.
+    /// This can be used to add additional information to the log messages which can be used for
+    /// filtering in Loki.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///     .tag("service", "service_name")
+    ///     .tag("environment", "production");
+    /// ```
+    pub fn tag(mut self, name: &str, value: &str) -> FenrirBuilder {
+        self.additional_tags
+            .insert(name.to_string(), value.to_string());
+        self
+    }
+
     /// Ensure that a tag for the logging level of the logging message is included in each logging
     /// message send to Loki.
     ///
@@ -336,6 +362,7 @@ impl FenrirBuilder {
             serializer,
             include_level: self.include_level,
             include_framework: self.include_framework,
+            additional_tags: self.additional_tags,
         }
     }
 }
