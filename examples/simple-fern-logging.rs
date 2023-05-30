@@ -14,6 +14,8 @@ fn main() {
             "password".to_string(),
         )
         .format(SerializationFormat::Json)
+        .include_level()
+        .include_framework()
         .build();
 
     let _ = Dispatch::new()

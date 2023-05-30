@@ -12,6 +12,8 @@ fn main() {
             "password".to_string(),
         )
         .format(SerializationFormat::Json)
+        .include_level()
+        .include_framework()
         .build();
 
     // set the actual logger for the facade

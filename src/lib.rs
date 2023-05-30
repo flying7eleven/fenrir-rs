@@ -69,6 +69,8 @@ pub(crate) trait FenrirBackend {
 pub struct Fenrir {
     backend: Box<dyn FenrirBackend + Send + Sync>,
     serializer: SerializationFn,
+    include_level: bool,
+    include_framework: bool,
 }
 
 impl Fenrir {
@@ -88,6 +90,8 @@ impl Fenrir {
             network_backend: NetworkingBackend::None,
             serialization_format: SerializationFormat::None,
             credentials: "".to_string(),
+            include_level: false,
+            include_framework: false,
         }
     }
 }
@@ -112,8 +116,12 @@ impl Log for Fenrir {
         let mut labels = HashMap::new();
 
         // the default labels supplied with all entries
-        labels.insert("logging_framework".to_string(), "fenrir".to_string());
-        labels.insert("level".to_string(), record.level().to_string());
+        if self.include_framework {
+            labels.insert("logging_framework".to_string(), "fenrir".to_string());
+        }
+        if self.include_level {
+            labels.insert("level".to_string(), record.level().to_string());
+        }
 
         // if structured logging is enabled, add the labels which were attached at the single entries
         #[cfg(feature = "structured_logging")]
@@ -168,6 +176,10 @@ pub struct FenrirBuilder {
     serialization_format: SerializationFormat,
     /// The `credentials` to use to authenticate against the remote `endpoint`
     credentials: String,
+    /// If set to `true`, the logging level is included as a tag
+    include_level: bool,
+    /// If set to `true`, the logging framework (`fenrir-rs`) is included as a tag
+    include_framework: bool,
 }
 
 impl FenrirBuilder {
@@ -247,6 +259,38 @@ impl FenrirBuilder {
         self
     }
 
+    /// Ensure that a tag for the logging level of the logging message is included in each logging
+    /// message send to Loki.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///     .include_level();
+    /// ```
+    pub fn include_level(mut self) -> FenrirBuilder {
+        self.include_level = true;
+        self
+    }
+
+    /// Ensure that a tag for the used logging framework (`fenrir-rs`) is included in all send
+    /// logging messages.
+    ///
+    /// # Example
+    /// ```
+    /// use url::Url;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///     .include_framework();
+    /// ```
+    pub fn include_framework(mut self) -> FenrirBuilder {
+        self.include_framework = true;
+        self
+    }
+
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling `build()`.
     ///
     /// # Example
@@ -286,10 +330,12 @@ impl FenrirBuilder {
             },
         };
 
-        // create and retun the actual backend
+        // create and return the actual backend
         Fenrir {
             backend: network_backend,
             serializer,
+            include_level: self.include_level,
+            include_framework: self.include_framework,
         }
     }
 }
