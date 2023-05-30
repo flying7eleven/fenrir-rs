@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## Unreleased
+
+### Fixes
+- Fix a linting warning in case the `structured_logging` feature was not selected
+
 ## 0.3.0 - 2023-05-26
 
 ### Added

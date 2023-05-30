@@ -108,13 +108,14 @@ impl Log for Fenrir {
             return;
         }
 
-        //
-        let mut labels = HashMap::from([
-            ("logging_framework".to_string(), "fenrir".to_string()),
-            ("level".to_string(), record.level().to_string()),
-        ]);
+        // a map with all labels which should be attached to the log entries
+        let mut labels = HashMap::new();
 
-        //
+        // the default labels supplied with all entries
+        labels.insert("logging_framework".to_string(), "fenrir".to_string());
+        labels.insert("level".to_string(), record.level().to_string());
+
+        // if structured logging is enabled, add the labels which were attached at the single entries
         #[cfg(feature = "structured_logging")]
         {
             let kv = record.key_values();
