@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 0.4.0 - 2023-05-30
 
 ### Added
 - Add an option to the builder to enable settings the `logging_framework` tag for all messages
@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Fix a linting warning in case the `structured_logging` feature was not selected
 
 ### Removed
-- The default behaviour for adding the `logging_framework` and the `level` tag was removed
+- The default behavior for adding the `logging_framework` and the `level` tag was removed
 
 ## 0.3.0 - 2023-05-26
 
