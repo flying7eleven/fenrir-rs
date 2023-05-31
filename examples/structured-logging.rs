@@ -13,7 +13,6 @@ fn main() {
         )
         .format(SerializationFormat::Json)
         .include_level()
-        .include_framework()
         .tag("service", "structured-logging")
         .build();
 

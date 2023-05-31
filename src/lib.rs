@@ -312,6 +312,10 @@ impl FenrirBuilder {
     /// let builder = Fenrir::builder()
     ///     .include_framework();
     /// ```
+    #[deprecated(
+        since = "0.4.1",
+        note = "This is not useful in general and can be achieved by using `tag` method."
+    )]
     pub fn include_framework(mut self) -> FenrirBuilder {
         self.include_framework = true;
         self
