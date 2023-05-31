@@ -6,13 +6,8 @@ fn main() {
     use url::Url;
 
     let my_loki = Fenrir::builder()
-        .endpoint(Url::parse("http://localhost:8080").unwrap())
+        .endpoint(Url::parse("http://localhost:3100").unwrap())
         .network(NetworkingBackend::Ureq)
-        .with_authentication(
-            AuthenticationMethod::Basic,
-            "example".to_string(),
-            "password".to_string(),
-        )
         .format(SerializationFormat::Json)
         .include_level()
         .tag("service", "simple-fern-logging")
