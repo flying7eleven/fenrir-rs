@@ -49,6 +49,7 @@ version = "2.1.0"
 default-features = false
 
 [features]
+default = ["ureq", "json"]
 ureq = ["dep:ureq"]
 json = ["dep:serde_json"]
 structured_logging = ["log/kv_unstable_std"]
