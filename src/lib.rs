@@ -438,3 +438,36 @@ pub(crate) struct Streams {
     /// TODO: document this
     pub(crate) streams: Vec<Stream>,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
+    use url::Url;
+
+    #[test]
+    #[should_panic]
+    fn building_a_fenrir_instance_without_network_backend_panics() {
+        let fenrir = Fenrir::builder()
+            .endpoint(Url::parse("http://loki.example.com:3100").unwrap())
+            .format(SerializationFormat::Json)
+            .build();
+    }
+
+    #[test]
+    #[should_panic]
+    fn building_a_fenrir_instance_without_serialization_backend_panics() {
+        let fenrir = Fenrir::builder()
+            .endpoint(Url::parse("http://loki.example.com:3100").unwrap())
+            .network(NetworkingBackend::Ureq)
+            .build();
+    }
+
+    #[test]
+    #[should_panic]
+    fn building_a_fenrir_instance_without_endpoint_panics() {
+        let fenrir = Fenrir::builder()
+            .network(NetworkingBackend::Ureq)
+            .format(SerializationFormat::Json)
+            .build();
+    }
+}
