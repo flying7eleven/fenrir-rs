@@ -57,7 +57,7 @@ impl FenrirBackend for UreqBackend {
 #[cfg(test)]
 mod tests {
     use crate::ureq::UreqBackend;
-    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend};
+    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
     use std::any::{Any, TypeId};
     use url::Url;
 
@@ -66,6 +66,7 @@ mod tests {
         let result = Fenrir::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
             .network(NetworkingBackend::Ureq)
+            .format(SerializationFormat::Json)
             .build();
         assert_eq!(
             result.backend.authentication_method(),
@@ -83,6 +84,7 @@ mod tests {
         let result = Fenrir::builder()
             .endpoint(Url::parse("https://loki.example.com").unwrap())
             .network(NetworkingBackend::Ureq)
+            .format(SerializationFormat::Json)
             .with_authentication(
                 AuthenticationMethod::Basic,
                 "username".to_string(),

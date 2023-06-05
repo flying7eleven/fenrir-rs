@@ -23,6 +23,7 @@ pub enum AuthenticationMethod {
 
 /// The `NetworkingBackend` defines all possible networking backends which can be used within
 /// the crate.
+#[derive(Eq, PartialEq)]
 pub enum NetworkingBackend {
     /// The `None` network backend does exactly what it says: it does nothing at all
     None,
@@ -34,6 +35,7 @@ pub enum NetworkingBackend {
 
 /// The `SerializationFormat` is used to configure the format to which the logging messages should
 /// be serialized to before sending them to the Loki endpoint.
+#[derive(Eq, PartialEq)]
 pub enum SerializationFormat {
     /// Do not serialize the data at all
     None,
@@ -332,17 +334,30 @@ impl FenrirBuilder {
     /// # Example
     /// ```
     /// use url::Url;
-    /// use fenrir_rs::{Fenrir, NetworkingBackend};
+    /// use fenrir_rs::{Fenrir, NetworkingBackend, SerializationFormat};
     ///
     /// let fenrir = Fenrir::builder()
     ///     .endpoint(Url::parse("https://loki.example.com").unwrap())
-    ///     .network(NetworkingBackend::None)
+    ///     .network(NetworkingBackend::Ureq)
+    ///     .format(SerializationFormat::Json)
     ///     .build();
     /// ```
     pub fn build(self) -> Fenrir {
         use crate::noop::NoopBackend;
         #[cfg(feature = "ureq")]
         use crate::ureq::UreqBackend;
+
+        // panic if no network backend was selected
+        if self.network_backend == NetworkingBackend::None {
+            panic!(
+                "You have to select a `NetworkingBackend` before creating an instance of `Fenrir`"
+            );
+        }
+
+        // panic if no serialization format was selected
+        if self.serialization_format == SerializationFormat::None {
+            panic!("You have to select a `SerializationFormat` before creating an instance of `Fenrir`");
+        }
 
         // create the instance of the required network backend
         let network_backend: Box<dyn FenrirBackend + Send + Sync> = match self.network_backend {
@@ -447,27 +462,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn building_a_fenrir_instance_without_network_backend_panics() {
-        let fenrir = Fenrir::builder()
-            .endpoint(Url::parse("http://loki.example.com:3100").unwrap())
-            .format(SerializationFormat::Json)
-            .build();
+        let fenrir = Fenrir::builder().format(SerializationFormat::Json).build();
     }
 
     #[test]
     #[should_panic]
     fn building_a_fenrir_instance_without_serialization_backend_panics() {
-        let fenrir = Fenrir::builder()
-            .endpoint(Url::parse("http://loki.example.com:3100").unwrap())
-            .network(NetworkingBackend::Ureq)
-            .build();
-    }
-
-    #[test]
-    #[should_panic]
-    fn building_a_fenrir_instance_without_endpoint_panics() {
-        let fenrir = Fenrir::builder()
-            .network(NetworkingBackend::Ureq)
-            .format(SerializationFormat::Json)
-            .build();
+        let fenrir = Fenrir::builder().network(NetworkingBackend::Ureq).build();
     }
 }
