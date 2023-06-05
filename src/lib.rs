@@ -158,7 +158,13 @@ impl Log for Fenrir {
         };
 
         // send the log stream using the configured backend
-        self.backend.send(&log_stream, self.serializer).unwrap();
+        match self.backend.send(&log_stream, self.serializer) {
+            Ok(_) => { /* nothing to do here*/ }
+            Err(_message) => {
+                #[cfg(debug_assertions)]
+                panic!("Could not send logs to Loki. The error was: {}", _message);
+            }
+        }
     }
 
     fn flush(&self) {

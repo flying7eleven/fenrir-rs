@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - `include_framework` is now deprecated since the same functionality can be achieved by using the `tag` method
+- If compiled in debug mode, the logger will panic if the logs could not be sent to Loki
 
 ## 0.4.0 - 2023-05-30
 
