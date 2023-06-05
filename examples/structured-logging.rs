@@ -1,5 +1,5 @@
 fn main() {
-    use fenrir_rs::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
+    use fenrir_rs::{Fenrir, NetworkingBackend, SerializationFormat};
     use log::{debug, error, info, set_boxed_logger, set_max_level, trace, warn, LevelFilter};
     use url::Url;
 

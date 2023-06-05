@@ -13,7 +13,7 @@ fn main() {
         )
         .format(SerializationFormat::Json)
         .include_level()
-        .tag("service", "simple-logging")
+        .tag("service", "simple-logging-with-auth")
         .build();
 
     // set the actual logger for the facade

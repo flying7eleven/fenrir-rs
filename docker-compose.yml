@@ -6,13 +6,14 @@ networks:
 services:
   nginx:
     container_name: nginx
+    restart: no
     build:
       context: docker/
       dockerfile: Dockerfile.nginx
     depends_on:
-      - loki
+      - loki_auth
     environment:
-      - FORWARD_HOST=loki
+      - FORWARD_HOST=loki_auth
       - FORWARD_PORT=3100
       - BASIC_USERNAME=example
       - BASIC_PASSWORD=password
@@ -21,18 +22,34 @@ services:
     networks:
       - loki
 
+  loki_auth:
+    container_name: loki_auth
+    image: grafana/loki:latest
+    restart: no
+    volumes:
+      - ./docker/loki_config_auth.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - loki
+
   loki:
     container_name: loki
     image: grafana/loki:latest
-    restart: always
+    restart: no
     volumes:
       - ./docker/loki_config.yml:/etc/loki/local-config.yaml:ro
     command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
     networks:
       - loki
 
   grafana:
     container_name: grafana
+    restart: no
+    depends_on:
+      - loki
+      - loki_auth
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -42,10 +59,10 @@ services:
       - -euc
       - |
         mkdir -p /etc/grafana/provisioning/datasources
-        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        cat <<EOF > /etc/grafana/provisioning/datasources/loki_auth.yaml
         apiVersion: 1
         datasources:
-        - name: Local Loki Testing Data Source
+        - name: Local Loki Data Source (Auth)
           type: loki
           access: proxy 
           orgId: 1
@@ -54,7 +71,20 @@ services:
           basicAuthUser: example
           secureJsonData:
             basicAuthPassword: password
-          isDefault: true
+          isDefault: false
+          version: 1
+          editable: false
+        EOF
+        cat <<EOF > /etc/grafana/provisioning/datasources/loki_non_auth.yaml
+        apiVersion: 1
+        datasources:
+        - name: Local Loki Data Source (Non-Auth)
+          type: loki
+          access: direct
+          orgId: 1
+          url: http://loki:3100
+          basicAuth: false
+          isDefault: false
           version: 1
           editable: false
         EOF

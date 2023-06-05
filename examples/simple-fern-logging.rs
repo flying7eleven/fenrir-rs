@@ -1,5 +1,5 @@
 fn main() {
-    use fenrir_rs::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
+    use fenrir_rs::{Fenrir, NetworkingBackend, SerializationFormat};
     use fern::Dispatch;
     use log::LevelFilter;
     use log::{debug, error, info, trace, warn};
