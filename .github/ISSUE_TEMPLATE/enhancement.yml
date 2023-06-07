@@ -1,0 +1,27 @@
+name: Feature requests
+description: Make a suggestion for a new feature
+title: "[Fature]: "
+labels: ["enhancement", "triage"]
+assignees:
+  - flying7eleven
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time suggest a new feature / enhancement!
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: What's your idea?
+      description: Please tell us what suggestion you have!
+      placeholder: ...
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/flying7eleven/fenrir-rs/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
