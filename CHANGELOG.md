@@ -4,9 +4,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+- Add the `build_with_validation()` method to validate the passed parameters before trying to create a new `Fenrir` 
+  instance
+
 ### Changed
 - Fix a typo in the README
-- Panic when trying to build a `Fenrir` instance without the required parameters set
 
 ## 0.4.1 - 2023-06-05
 

@@ -329,7 +329,44 @@ impl FenrirBuilder {
         self
     }
 
-    /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling `build()`.
+    /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling this method.
+    ///
+    /// Before creating a new instance, the supplied parameters are validated (in contrast to [`FenrirBuilder::build`]
+    /// which does not validate the supplied parameters).
+    ///
+    /// # Panics
+    /// The method will panic if one or more of the supplied parameters are not valid or seem to have
+    /// unintended values.
+    ///
+    /// # Example
+    /// ```should_panic
+    /// use url::Url;
+    /// use fenrir_rs::{Fenrir, NetworkingBackend, SerializationFormat};
+    ///
+    /// let fenrir = Fenrir::builder()
+    ///     .endpoint(Url::parse("https://loki.example.com").unwrap())
+    ///     .network(NetworkingBackend::None)
+    ///     .format(SerializationFormat::None)
+    ///     .build_with_validation();
+    /// ```
+    pub fn build_with_validation(self) -> Fenrir {
+        // panic if no network backend was selected
+        if self.network_backend == NetworkingBackend::None {
+            panic!(
+                "You have to select a `NetworkingBackend` before creating an instance of `Fenrir`"
+            );
+        }
+
+        // panic if no serialization format was selected
+        if self.serialization_format == SerializationFormat::None {
+            panic!("You have to select a `SerializationFormat` before creating an instance of `Fenrir`");
+        }
+
+        // after the validation, we can call the actual build method to create the new Fenrir instance
+        self.build()
+    }
+
+    /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling this method.
     ///
     /// # Example
     /// ```
@@ -346,18 +383,6 @@ impl FenrirBuilder {
         use crate::noop::NoopBackend;
         #[cfg(feature = "ureq")]
         use crate::ureq::UreqBackend;
-
-        // panic if no network backend was selected
-        if self.network_backend == NetworkingBackend::None {
-            panic!(
-                "You have to select a `NetworkingBackend` before creating an instance of `Fenrir`"
-            );
-        }
-
-        // panic if no serialization format was selected
-        if self.serialization_format == SerializationFormat::None {
-            panic!("You have to select a `SerializationFormat` before creating an instance of `Fenrir`");
-        }
 
         // create the instance of the required network backend
         let network_backend: Box<dyn FenrirBackend + Send + Sync> = match self.network_backend {
@@ -461,13 +486,27 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn building_a_fenrir_instance_without_network_backend_panics() {
+    fn building_a_validated_fenrir_instance_without_network_backend_panics() {
+        let fenrir = Fenrir::builder()
+            .format(SerializationFormat::Json)
+            .build_with_validation();
+    }
+
+    #[test]
+    fn building_a_non_validated_fenrir_instance_without_network_backend_does_not_panic() {
         let fenrir = Fenrir::builder().format(SerializationFormat::Json).build();
     }
 
     #[test]
     #[should_panic]
-    fn building_a_fenrir_instance_without_serialization_backend_panics() {
+    fn building_a_validated_fenrir_instance_without_serialization_backend_panics() {
+        let fenrir = Fenrir::builder()
+            .network(NetworkingBackend::Ureq)
+            .build_with_validation();
+    }
+
+    #[test]
+    fn building_a_non_validated_fenrir_instance_without_serialization_backend_does_not_panic() {
         let fenrir = Fenrir::builder().network(NetworkingBackend::Ureq).build();
     }
 }
