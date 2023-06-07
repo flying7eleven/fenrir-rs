@@ -13,7 +13,7 @@ body:
     id: rust-version
     attributes:
       label: Rust compiler version
-      description: Which version of Rust did you use?
+      description: Which version of Rust did you use (see rustc --version`)?
       placeholder: ex. rustc 1.69.0 (84c898d65 2023-04-16)
     validations:
       required: true
@@ -26,14 +26,31 @@ body:
     validations:
       required: true
   - type: textarea
-    id: what-happened
+    id: bug-description
     attributes:
       label: What happened?
-      description: Also tell us, what did you expect to happen?
+      description: Please tell us what happend.
       placeholder: Tell us what you see!
       value: "A bug happened!"
     validations:
       required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: What was the behavior you expected?
+      description: Please tell us what you have expected instead.
+      placeholder: Tell us what you expected.
+      value: "It should not have happened!"
+    validations:
+      required: true
+  - type: textarea
+    id: compiler-output
+    attributes:
+      label: Whats the output of the compiler?
+      description: If there is any relevant compiler output, please provide it here.
+      placeholder: ...
+    validations:
+      required: false
   - type: checkboxes
     id: terms
     attributes:
