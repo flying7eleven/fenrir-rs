@@ -1,13 +1,17 @@
+//! A module which contains the implementation for the [`FenrirBackend`] trait which uses the `ureq`
+//! crate for network communication.
 use crate::{AuthenticationMethod, FenrirBackend, SerializationFn, Streams};
 use std::any::TypeId;
 use url::Url;
 
+/// A [`FenrirBackend`] implementation which uses the [ureq](https://crates.io/crates/ureq) crate to
+/// send logging messages to a Loki endpoint.
 pub(crate) struct UreqBackend {
-    /// The loki `endpoint` which is used to send log information to
+    /// The loki endpoint which is used to send log information to
     pub(crate) endpoint: Url,
-    /// The `authentication` method to use when sending the log messages to the remote endpoint
+    /// The authentication method to use when sending the log messages to the remote [`UreqBackend::endpoint`]
     pub(crate) authentication: AuthenticationMethod,
-    /// The `credentials` to use to authenticate against the remote `endpoint`
+    /// The credentials to use to authenticate against the remote [`UreqBackend::endpoint`]
     pub(crate) credentials: String,
 }
 

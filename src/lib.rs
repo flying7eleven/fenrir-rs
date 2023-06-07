@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;
 
-/// The `AuthenticationMethod` enum is used to specify the authentication method to use when
+/// The [`AuthenticationMethod`] enum is used to specify the authentication method to use when
 /// sending the log messages to the remote endpoint.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum AuthenticationMethod {
@@ -21,7 +21,7 @@ pub enum AuthenticationMethod {
     Basic,
 }
 
-/// The `NetworkingBackend` defines all possible networking backends which can be used within
+/// The [`NetworkingBackend`] defines all possible networking backends which can be used within
 /// the crate.
 #[derive(Eq, PartialEq)]
 pub enum NetworkingBackend {
@@ -33,7 +33,7 @@ pub enum NetworkingBackend {
     Ureq,
 }
 
-/// The `SerializationFormat` is used to configure the format to which the logging messages should
+/// The [`SerializationFormat`] is used to configure the format to which the logging messages should
 /// be serialized to before sending them to the Loki endpoint.
 #[derive(Eq, PartialEq)]
 pub enum SerializationFormat {
@@ -48,7 +48,7 @@ pub enum SerializationFormat {
 /// The function definition which is used to serialize the logging messages for Loki
 pub(crate) type SerializationFn = fn(&Streams) -> Result<String, String>;
 
-/// The `FenrirBackend` trait is used to specify the interfaces which are required for the communication
+/// This trait is used to specify the interfaces which are required for the communication
 /// with the remote endpoint.
 pub(crate) trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend
@@ -64,10 +64,10 @@ pub(crate) trait FenrirBackend {
     fn credentials(&self) -> Option<String>;
 }
 
-/// The `Fenrir` struct implements the communication interface with a [Loki](https://grafana.com/oss/loki/)
+/// The [`Fenrir`] struct implements the communication interface with a [Loki](https://grafana.com/oss/loki/)
 /// instance.
 ///
-/// To create a new instance of the `Fenrir` struct use the `FenrirBuilder` struct.
+/// To create a new instance of the [`Fenrir`] struct use the [`FenrirBuilder`] struct.
 pub struct Fenrir {
     backend: Box<dyn FenrirBackend + Send + Sync>,
     additional_tags: HashMap<String, String>,
@@ -77,7 +77,7 @@ pub struct Fenrir {
 }
 
 impl Fenrir {
-    /// Create a new `FenrirBuilder` with all required parameters.
+    /// Create a new [`FenrirBuilder`] with all required parameters.
     ///
     /// # Example
     /// ```
@@ -174,7 +174,7 @@ impl Log for Fenrir {
     }
 }
 
-/// The `FenrirBuilder` struct is used to create a new instance of `Fenrir`using the builder pattern.
+/// The [`FenrirBuilder`] struct is used to create a new instance of [`Fenrir`] using the builder pattern.
 ///
 /// This should make it easier and more intuitive (at least I hope) to use the crate without referring
 /// to the documentation all the time.
@@ -213,7 +213,7 @@ impl FenrirBuilder {
         self
     }
 
-    /// TODO
+    /// Set the network backend which should be used to communicate with a Loki endpoint.
     ///
     /// # Example
     /// ```
@@ -417,28 +417,29 @@ impl FenrirBuilder {
     }
 }
 
-/// TODO: document this
+/// A serialization implementation which does nothing when requesting to serialize a object
 pub(crate) fn noop_serializer(_: &Streams) -> Result<String, String> {
     Ok("".to_string())
 }
 
-/// TODO: document this
+/// A struct for visiting all structured logging labels of a log message and collecting them
 #[cfg(feature = "structured_logging")]
 struct LokiVisitor<'kvs> {
     values: HashMap<log::kv::Key<'kvs>, log::kv::Value<'kvs>>,
 }
 
-/// TODO: document this
+/// The implementation for the visitor pattern for collecting all labels attached to a log
+/// message
 #[cfg(feature = "structured_logging")]
 impl<'kvs> LokiVisitor<'kvs> {
-    /// TODO: document this
+    /// Create a new visitor with an initial capacity of `count` labels.
     pub fn new(count: usize) -> Self {
         Self {
             values: HashMap::with_capacity(count),
         }
     }
 
-    /// TODO: document this
+    /// Read the key-value-pair attached to a log message and collect them
     pub fn read_kv(
         &'kvs mut self,
         source: &'kvs dyn Source,
@@ -450,7 +451,7 @@ impl<'kvs> LokiVisitor<'kvs> {
     }
 }
 
-/// TODO: document this
+/// The [`Visitor'] implementation for the [`LokiVisitor`]
 #[cfg(feature = "structured_logging")]
 impl<'kvs> Visitor<'kvs> for LokiVisitor<'kvs> {
     fn visit_pair(
@@ -463,19 +464,21 @@ impl<'kvs> Visitor<'kvs> for LokiVisitor<'kvs> {
     }
 }
 
-/// TODO: document this
+/// The data structure used for attaching tags / labels to logging entries before sending them
+/// to Loki
 #[derive(Serialize)]
 pub(crate) struct Stream {
-    /// TODO: document this
+    /// The tags which should be attached to the logging entries
     pub(crate) stream: HashMap<String, String>,
-    /// TODO: document this
+    /// The actual log messages to store with the corresponding meta information
     pub(crate) values: Vec<Vec<String>>,
 }
 
-/// TODO: document this
+/// The base data structure Loki expects when receiving logging messages.
 #[derive(Serialize)]
 pub(crate) struct Streams {
-    /// TODO: document this
+    /// A list of all logging messages with the attached meta information which should be logged
+    /// by Loki
     pub(crate) streams: Vec<Stream>,
 }
 

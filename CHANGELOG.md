@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 - Fix a typo in the README
+- Updated the documentation of all traits, structs and enums in the crate
 
 ## 0.4.1 - 2023-06-05
 

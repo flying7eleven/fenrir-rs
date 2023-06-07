@@ -1,7 +1,9 @@
+//! A module which contains the implementation for the [`FenrirBackend`] trait which ignores all
+//! network requests.
 use crate::{AuthenticationMethod, FenrirBackend, SerializationFn, Streams};
 use std::any::TypeId;
 
-/// The `NoopBackend` is used by default and does ignore all logging messages.
+/// The [`NoopBackend`] is used by default and does ignore all logging messages.
 pub(crate) struct NoopBackend;
 
 impl FenrirBackend for NoopBackend {
