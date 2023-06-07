@@ -1,0 +1,44 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees:
+  - flying7eleven
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: input
+    id: rust-version
+    attributes:
+      label: Rust compiler version
+      description: Which version of Rust did you use?
+      placeholder: ex. rustc 1.69.0 (84c898d65 2023-04-16)
+    validations:
+      required: true
+  - type: input
+    id: rust-platform-triple
+    attributes:
+      label: Rust compile target platform
+      description: For which target platform were you compiling?
+      placeholder: ex. aarch64-apple-darwin
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://example.com)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
