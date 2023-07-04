@@ -1,6 +1,6 @@
 name: Feature requests
 description: Make a suggestion for a new feature
-title: "[Fature]: "
+title: "[Feature]: "
 labels: ["enhancement", "triage"]
 assignees:
   - flying7eleven
