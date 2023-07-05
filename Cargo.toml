@@ -61,6 +61,10 @@ default-features = false
 version = "2.1.0"
 default-features = false
 
+[dev-dependencies.tokio]
+version = "1"
+features = ["rt-multi-thread", "macros"]
+
 [features]
 default = ["ureq", "json"]
 ureq = ["dep:ureq"]
