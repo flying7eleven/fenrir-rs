@@ -374,6 +374,7 @@ impl FenrirBuilder {
     /// # Example
     /// ```
     /// use tokio::runtime::Handle;
+    /// use fenrir_rs::Fenrir;
     ///
     /// # #[tokio::main]
     /// # async fn main() {
@@ -395,11 +396,12 @@ impl FenrirBuilder {
     /// # Example
     /// ```
     /// use tokio::runtime::Handle;
+    /// use fenrir_rs::Fenrir;
     ///
     /// # #[tokio::main]
     /// # async fn main() {
     ///   let builder = Fenrir::builder()
-    ///     .tokio_rt_handle();
+    ///     .tokio_rt_handle_current();
     /// # }
     #[cfg(feature = "async-tokio")]
     pub fn tokio_rt_handle_current(mut self) -> FenrirBuilder {
