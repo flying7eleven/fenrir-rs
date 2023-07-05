@@ -43,6 +43,16 @@ version = "2.6.2"
 default-features = false
 optional = true
 
+[dependencies.reqwest]
+version = "0.11"
+default-features = false
+optional = true
+
+[dependencies.tokio]
+version = "1"
+default-features = false
+optional = true
+
 [dev-dependencies.fern]
 version = "0.6.2"
 default-features = false
@@ -54,6 +64,8 @@ default-features = false
 [features]
 default = ["ureq", "json"]
 ureq = ["dep:ureq"]
+reqwest-async = ["dep:reqwest", "async-tokio"]
+async-tokio = ["dep:tokio", "tokio/rt"]
 json = ["dep:serde_json"]
 structured_logging = ["log/kv_unstable_std"]
 
