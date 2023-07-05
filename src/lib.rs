@@ -94,6 +94,7 @@ pub struct Fenrir {
     include_level: bool,
     include_framework: bool,
     log_stream: RwLock<Vec<Stream>>,
+    flush_threshold: usize,
 }
 
 impl Fenrir {
@@ -117,6 +118,7 @@ impl Fenrir {
             include_level: false,
             include_framework: false,
             runtime: None,
+            flush_threshold: 100,
         }
     }
 }
@@ -181,7 +183,16 @@ impl Log for Fenrir {
             ]],
         };
         // push the stream object to the log stream
-        self.log_stream.write().push(stream_object);
+        let log_stream_size = {
+            let mut log_stream = self.log_stream.write();
+            log_stream.push(stream_object);
+            log_stream.len()
+        };
+
+        // check if we need to flush the logs
+        if log_stream_size >= self.flush_threshold {
+            self.flush();
+        }
     }
 
     fn flush(&self) {
@@ -228,13 +239,17 @@ pub struct FenrirBuilder {
     credentials: String,
     /// If set to `true`, the logging level is included as a tag
     include_level: bool,
-    /// If set to `true`, the logging framework (`fenrir-rs`) is included as a tag
+    /// If set to `true,` the logging framework (`fenrir-rs`) is included as a tag
     include_framework: bool,
     /// A runtime handle to the tokio runtime, if it is used
     #[cfg(feature = "async-tokio")]
     runtime: Option<tokio::runtime::Handle>,
     #[cfg(not(feature = "async-tokio"))]
     runtime: Option<()>,
+    /// Number of log messages after which to flush all outstanding messages to Loki.
+    /// Defaults to 100.
+    /// Must be greater than 0.
+    flush_threshold: usize,
 }
 
 impl FenrirBuilder {
@@ -409,6 +424,26 @@ impl FenrirBuilder {
         self
     }
 
+    /// Configure the number of messages which should be buffered before sending them all to Loki.
+    ///
+    /// # Panics
+    /// This method will panic if the supplied value is 0.
+    ///
+    /// # Example
+    /// ```
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///    .flush_threshold(100);
+    /// ```
+    pub fn flush_threshold(mut self, size: usize) -> FenrirBuilder {
+        if size == 0 {
+            panic!("Buffer size must be greater than 0");
+        }
+        self.flush_threshold = size;
+        self
+    }
+
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling this method.
     ///
     /// Before creating a new instance, the supplied parameters are validated (in contrast to [`FenrirBuilder::build`]
@@ -471,6 +506,11 @@ impl FenrirBuilder {
     pub fn build(self) -> Fenrir {
         use crate::noop::NoopBackend;
 
+        // panic if the number of logs to buffer is 0 (will cause infinite memory growth otherwise)
+        if self.flush_threshold == 0 {
+            panic!("You have to set a buffer size greater than 0");
+        }
+
         // create the instance of the required network backend
         let network_backend: Box<dyn FenrirBackend + Send + Sync> = match self.network_backend {
             NetworkingBackend::None => Box::new(NoopBackend {}),
@@ -509,7 +549,8 @@ impl FenrirBuilder {
             include_level: self.include_level,
             include_framework: self.include_framework,
             additional_tags: self.additional_tags,
-            log_stream: RwLock::new(Vec::new()),
+            log_stream: RwLock::new(Vec::with_capacity(self.flush_threshold)),
+            flush_threshold: self.flush_threshold,
         }
     }
 }
