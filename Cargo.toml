@@ -29,6 +29,9 @@ version = "0.21.0"
 default-features = false
 features = ["std"]
 
+[dependencies.parking_lot]
+version = "0.12"
+
 [dependencies.serde_json]
 version = "1.0.96"
 default-features = false

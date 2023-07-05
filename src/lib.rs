@@ -7,6 +7,7 @@ pub mod ureq;
 #[cfg(feature = "structured_logging")]
 use log::kv::{Source, Visitor};
 use log::{Log, Metadata, Record};
+use parking_lot::RwLock;
 use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;
@@ -46,13 +47,13 @@ pub enum SerializationFormat {
 }
 
 /// The function definition which is used to serialize the logging messages for Loki
-pub(crate) type SerializationFn = fn(&Streams) -> Result<String, String>;
+pub(crate) type SerializationFn = fn(&Streams) -> Result<Vec<u8>, String>;
 
 /// This trait is used to specify the interfaces which are required for the communication
 /// with the remote endpoint.
 pub(crate) trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend
-    fn send(&self, streams: &Streams, serializer: SerializationFn) -> Result<(), String>;
+    fn send(&self, serialized_stream: Vec<u8>) -> Result<(), String>;
 
     /// Query the `TypeId` of the implementation of this trait
     fn internal_type(&self) -> std::any::TypeId;
@@ -74,6 +75,7 @@ pub struct Fenrir {
     serializer: SerializationFn,
     include_level: bool,
     include_framework: bool,
+    log_stream: RwLock<Vec<Stream>>,
 }
 
 impl Fenrir {
@@ -145,32 +147,43 @@ impl Log for Fenrir {
         }
 
         // create the logging stream we want to send to loki
-        let log_stream = Streams {
-            streams: vec![Stream {
-                stream: labels,
-                values: vec![vec![
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_nanos()
-                        .to_string(),
-                    record.args().to_string(),
-                ]],
-            }],
+        let stream_object = Stream {
+            stream: labels,
+            values: vec![vec![
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+                    .to_string(),
+                record.args().to_string(),
+            ]],
         };
-
-        // send the log stream using the configured backend
-        match self.backend.send(&log_stream, self.serializer) {
-            Ok(_) => { /* nothing to do here*/ }
-            Err(_message) => {
-                #[cfg(debug_assertions)]
-                panic!("Could not send logs to Loki. The error was: {}", _message);
-            }
-        }
+        // push the stream object to the log stream
+        self.log_stream.write().push(stream_object);
     }
 
     fn flush(&self) {
-        // TODO: implement the actual flushing
+        // fetch and serialize the log streams
+        let res = {
+            // this route can save several allocations since we do not need to clone the streams,
+            // and we reuse the allocated memory
+            let mut streams = self.log_stream.write();
+            let res = (self.serializer)(&Streams { streams: &streams });
+            streams.clear();
+            res
+        };
+        match res {
+            Ok(serialized_stream) => {
+                if let Err(e) = self.backend.send(serialized_stream) {
+                    #[cfg(debug_assertions)]
+                    panic!("Could not send logs to Loki. The error was: {}", e);
+                }
+            }
+            Err(message) => {
+                #[cfg(debug_assertions)]
+                panic!("Could not serialize logs. The error was: {}", message);
+            }
+        }
     }
 }
 
@@ -401,8 +414,8 @@ impl FenrirBuilder {
             SerializationFormat::None => noop_serializer,
 
             #[cfg(feature = "json")]
-            SerializationFormat::Json => |data: &Streams| -> Result<String, String> {
-                serde_json::to_string(data).map_err(|error| error.to_string())
+            SerializationFormat::Json => |data: &Streams| -> Result<Vec<u8>, String> {
+                serde_json::to_vec(data).map_err(|error| error.to_string())
             },
         };
 
@@ -413,13 +426,14 @@ impl FenrirBuilder {
             include_level: self.include_level,
             include_framework: self.include_framework,
             additional_tags: self.additional_tags,
+            log_stream: RwLock::new(Vec::new()),
         }
     }
 }
 
 /// A serialization implementation which does nothing when requesting to serialize a object
-pub(crate) fn noop_serializer(_: &Streams) -> Result<String, String> {
-    Ok("".to_string())
+pub(crate) fn noop_serializer(_: &Streams) -> Result<Vec<u8>, String> {
+    Ok(vec![])
 }
 
 /// A struct for visiting all structured logging labels of a log message and collecting them
@@ -476,10 +490,10 @@ pub(crate) struct Stream {
 
 /// The base data structure Loki expects when receiving logging messages.
 #[derive(Serialize)]
-pub(crate) struct Streams {
+pub(crate) struct Streams<'a> {
     /// A list of all logging messages with the attached meta information which should be logged
     /// by Loki
-    pub(crate) streams: Vec<Stream>,
+    pub(crate) streams: &'a [Stream],
 }
 
 #[cfg(test)]

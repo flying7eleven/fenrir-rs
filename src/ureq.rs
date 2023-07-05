@@ -1,6 +1,6 @@
 //! A module which contains the implementation for the [`FenrirBackend`] trait which uses the `ureq`
 //! crate for network communication.
-use crate::{AuthenticationMethod, FenrirBackend, SerializationFn, Streams};
+use crate::{AuthenticationMethod, FenrirBackend};
 use std::any::TypeId;
 use url::Url;
 
@@ -16,13 +16,15 @@ pub(crate) struct UreqBackend {
 }
 
 impl FenrirBackend for UreqBackend {
-    fn send(&self, streams: &Streams, serializer: SerializationFn) -> Result<(), String> {
+    fn send(&self, serialized_streams: Vec<u8>) -> Result<(), String> {
         use std::time::Duration;
         use ureq::AgentBuilder;
 
-        let log_stream_text = serializer(streams).unwrap();
-
-        let post_url = self.endpoint.clone().join("/loki/api/v1/push").unwrap();
+        let post_url = self
+            .endpoint
+            .clone()
+            .join("/loki/api/v1/push")
+            .map_err(|e| e.to_string())?;
         let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
         let mut request = agent.request_url("POST", &post_url);
         request = request.set("Content-Type", "application/json; charset=utf-8");
@@ -35,8 +37,10 @@ impl FenrirBackend for UreqBackend {
                 );
             }
         }
-        let _ = request.send_string(log_stream_text.as_str()).unwrap();
 
+        request
+            .send_bytes(&serialized_streams)
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
