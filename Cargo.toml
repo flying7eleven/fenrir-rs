@@ -65,7 +65,7 @@ default-features = false
 default = ["ureq", "json"]
 ureq = ["dep:ureq"]
 reqwest-async = ["dep:reqwest", "async-tokio"]
-async-tokio = ["dep:tokio", "tokio/rt"]
+async-tokio = ["tokio", "tokio/rt"]
 json = ["dep:serde_json"]
 structured_logging = ["log/kv_unstable_std"]
 
