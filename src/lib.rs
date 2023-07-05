@@ -179,7 +179,15 @@ impl Log for Fenrir {
                     .unwrap()
                     .as_nanos()
                     .to_string(),
-                record.args().to_string(),
+                serde_json::to_string(&SerializedEvent {
+                    file: record.file(),
+                    line: record.line(),
+                    module: record.module_path(),
+                    level: record.level().as_str(),
+                    target: record.target(),
+                    message: record.args().to_string(),
+                })
+                    .expect("JSON serialization failed (should not happen)"),
             ]],
         };
         // push the stream object to the log stream
@@ -610,6 +618,23 @@ pub(crate) struct Stream {
     pub(crate) stream: HashMap<String, String>,
     /// The actual log messages to store with the corresponding meta information
     pub(crate) values: Vec<Vec<String>>,
+}
+
+/// The data structure used for encoding a single log message before sending it to Loki
+#[derive(Serialize)]
+pub(crate) struct SerializedEvent<'a> {
+    /// The file name of the log message source
+    pub(crate) file: Option<&'a str>,
+    /// The line number of the log message source
+    pub(crate) line: Option<u32>,
+    /// The module name of the log message source
+    pub(crate) module: Option<&'a str>,
+    /// The log level of the log message
+    pub(crate) level: &'static str,
+    /// The target of the log message
+    pub(crate) target: &'a str,
+    /// The actual log message
+    pub(crate) message: String,
 }
 
 /// The base data structure Loki expects when receiving logging messages.
