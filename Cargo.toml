@@ -82,6 +82,10 @@ name = "simple-logging"
 required-features = ["ureq", "json"]
 
 [[example]]
+name = "simple-logging-reqwest"
+required-features = ["reqwest-async", "json"]
+
+[[example]]
 name = "simple-logging-with-auth"
 required-features = ["ureq", "json"]
 
