@@ -82,3 +82,55 @@ impl FenrirBackend for ReqwestBackend {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::reqwest::ReqwestBackend;
+    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
+    use std::any::{Any, TypeId};
+    use url::Url;
+
+    #[tokio::test]
+    async fn creating_a_reqwest_instance_without_credentials_works_correctly() {
+        let result = Fenrir::builder()
+            .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .network(NetworkingBackend::Reqwest)
+            .format(SerializationFormat::Json)
+            .build();
+        assert_eq!(
+            result.backend.authentication_method(),
+            AuthenticationMethod::None
+        );
+        assert_eq!(result.backend.credentials(), None);
+        assert_eq!(
+            result.backend.internal_type(),
+            TypeId::of::<ReqwestBackend>().type_id()
+        );
+    }
+
+    #[tokio::test]
+    async fn creating_a_ureq_instance_with_credentials_works_correctly() {
+        let result = Fenrir::builder()
+            .endpoint(Url::parse("https://loki.example.com").unwrap())
+            .network(NetworkingBackend::Reqwest)
+            .format(SerializationFormat::Json)
+            .with_authentication(
+                AuthenticationMethod::Basic,
+                "username".to_string(),
+                "password".to_string(),
+            )
+            .build();
+        assert_eq!(
+            result.backend.authentication_method(),
+            AuthenticationMethod::Basic
+        );
+        assert_eq!(
+            result.backend.credentials(),
+            Some("dXNlcm5hbWU6cGFzc3dvcmQ=".to_string())
+        );
+        assert_eq!(
+            result.backend.internal_type(),
+            TypeId::of::<ReqwestBackend>().type_id()
+        );
+    }
+}
