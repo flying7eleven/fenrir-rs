@@ -29,7 +29,6 @@ impl FenrirBackend for NoopBackend {
 #[cfg(test)]
 mod tests {
     use crate::noop::NoopBackend;
-    use crate::ureq::UreqBackend;
     use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
     use std::any::{Any, TypeId};
     use url::Url;

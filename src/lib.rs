@@ -622,32 +622,31 @@ pub(crate) struct Streams<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
-    use url::Url;
+    use crate::{Fenrir, NetworkingBackend, SerializationFormat};
 
     #[test]
     #[should_panic]
     fn building_a_validated_fenrir_instance_without_network_backend_panics() {
-        let fenrir = Fenrir::builder()
+        let _fenrir = Fenrir::builder()
             .format(SerializationFormat::Json)
             .build_with_validation();
     }
 
     #[test]
     fn building_a_non_validated_fenrir_instance_without_network_backend_does_not_panic() {
-        let fenrir = Fenrir::builder().format(SerializationFormat::Json).build();
+        let _fenrir = Fenrir::builder().format(SerializationFormat::Json).build();
     }
 
     #[test]
     #[should_panic]
     fn building_a_validated_fenrir_instance_without_serialization_backend_panics() {
-        let fenrir = Fenrir::builder()
+        let _fenrir = Fenrir::builder()
             .network(NetworkingBackend::Ureq)
             .build_with_validation();
     }
 
     #[test]
     fn building_a_non_validated_fenrir_instance_without_serialization_backend_does_not_panic() {
-        let fenrir = Fenrir::builder().network(NetworkingBackend::Ureq).build();
+        let _fenrir = Fenrir::builder().network(NetworkingBackend::Ureq).build();
     }
 }
