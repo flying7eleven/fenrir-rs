@@ -95,6 +95,7 @@ pub struct Fenrir {
     include_framework: bool,
     log_stream: RwLock<Vec<Stream>>,
     flush_threshold: usize,
+    max_message_size: Option<usize>,
 }
 
 impl Fenrir {
@@ -119,6 +120,7 @@ impl Fenrir {
             include_framework: false,
             runtime: None,
             flush_threshold: 100,
+            max_message_size: None,
         }
     }
 }
@@ -170,6 +172,22 @@ impl Log for Fenrir {
             );
         }
 
+        let serialized_event = serde_json::to_string(&SerializedEvent {
+            file: record.file(),
+            line: record.line(),
+            module: record.module_path(),
+            level: record.level().as_str(),
+            target: record.target(),
+            message: record.args().to_string(),
+        })
+        .expect("JSON serialization failed (should not happen)");
+
+        if let Some(max_message_size) = self.max_message_size {
+            if serialized_event.len() > max_message_size {
+                return;
+            }
+        }
+
         // create the logging stream we want to send to loki
         let stream_object = Stream {
             stream: labels,
@@ -179,15 +197,7 @@ impl Log for Fenrir {
                     .unwrap()
                     .as_nanos()
                     .to_string(),
-                serde_json::to_string(&SerializedEvent {
-                    file: record.file(),
-                    line: record.line(),
-                    module: record.module_path(),
-                    level: record.level().as_str(),
-                    target: record.target(),
-                    message: record.args().to_string(),
-                })
-                .expect("JSON serialization failed (should not happen)"),
+                serialized_event,
             ]],
         };
         // push the stream object to the log stream
@@ -258,6 +268,10 @@ pub struct FenrirBuilder {
     /// Defaults to 100.
     /// Must be greater than 0.
     flush_threshold: usize,
+    /// Skip a log message if its serialized representation is larger than this value in bytes.
+    /// Defaults to None, which means no limit.
+    /// If set, must be greater than 0.
+    max_message_size: Option<usize>,
 }
 
 impl FenrirBuilder {
@@ -452,6 +466,28 @@ impl FenrirBuilder {
         self
     }
 
+    /// Configure the maximum size of a single message, in bytes, before it is dropped.
+    /// This is useful for avoiding network issues when sending large messages on slow or unreliable networks.
+    /// Defaults to None, which means that no limit is enforced.
+    ///
+    /// # Panics
+    /// This method will panic if the supplied value is 0.
+    ///
+    /// # Example
+    /// ```
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///    .max_message_size(Some(1048576));
+    /// ```
+    pub fn max_message_size(mut self, size: Option<usize>) -> FenrirBuilder {
+        if size == Some(0) {
+            panic!("Max message size must be greater than 0");
+        }
+        self.max_message_size = size;
+        self
+    }
+
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling this method.
     ///
     /// Before creating a new instance, the supplied parameters are validated (in contrast to [`FenrirBuilder::build`]
@@ -559,6 +595,7 @@ impl FenrirBuilder {
             additional_tags: self.additional_tags,
             log_stream: RwLock::new(Vec::with_capacity(self.flush_threshold)),
             flush_threshold: self.flush_threshold,
+            max_message_size: self.max_message_size,
         }
     }
 }
