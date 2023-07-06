@@ -2,11 +2,12 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## Unreleased
+## 0.5.0 - 2023-07-06
 
 ### Added
 - Add the `build_with_validation()` method to validate the passed parameters before trying to create a new `Fenrir` 
   instance
+- Add a `reqwest-async` backend for doing the actual networking requests (thanks to [zero](https://github.com/tazz4843)) 
 
 ### Changed
 - Fix a typo in the README
