@@ -1,6 +1,6 @@
 [package]
 name = "fenrir-rs"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 authors = ["Tim Janke <tim+github@janke.biz>"]
 repository = "https://github.com/flying7eleven/fenrir-rs"
@@ -29,6 +29,9 @@ version = "0.21.0"
 default-features = false
 features = ["std"]
 
+[dependencies.parking_lot]
+version = "0.12"
+
 [dependencies.serde_json]
 version = "1.0.96"
 default-features = false
@@ -40,6 +43,16 @@ version = "2.6.2"
 default-features = false
 optional = true
 
+[dependencies.reqwest]
+version = "0.11"
+default-features = false
+optional = true
+
+[dependencies.tokio]
+version = "1"
+default-features = false
+optional = true
+
 [dev-dependencies.fern]
 version = "0.6.2"
 default-features = false
@@ -48,9 +61,15 @@ default-features = false
 version = "2.1.0"
 default-features = false
 
+[dev-dependencies.tokio]
+version = "1"
+features = ["rt-multi-thread", "macros"]
+
 [features]
 default = ["ureq", "json"]
 ureq = ["dep:ureq"]
+reqwest-async = ["dep:reqwest", "async-tokio"]
+async-tokio = ["tokio", "tokio/rt"]
 json = ["dep:serde_json"]
 structured_logging = ["log/kv_unstable_std"]
 
@@ -61,6 +80,10 @@ rustdoc-args = ["--document-private-items"]
 [[example]]
 name = "simple-logging"
 required-features = ["ureq", "json"]
+
+[[example]]
+name = "simple-logging-reqwest"
+required-features = ["reqwest-async", "json"]
 
 [[example]]
 name = "simple-logging-with-auth"

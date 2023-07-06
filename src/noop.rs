@@ -1,13 +1,13 @@
 //! A module which contains the implementation for the [`FenrirBackend`] trait which ignores all
 //! network requests.
-use crate::{AuthenticationMethod, FenrirBackend, SerializationFn, Streams};
+use crate::{AuthenticationMethod, FenrirBackend};
 use std::any::TypeId;
 
 /// The [`NoopBackend`] is used by default and does ignore all logging messages.
 pub(crate) struct NoopBackend;
 
 impl FenrirBackend for NoopBackend {
-    fn send(&self, _: &Streams, _: SerializationFn) -> Result<(), String> {
+    fn send(&self, _: Vec<u8>) -> Result<(), String> {
         Ok(())
     }
 
@@ -29,7 +29,6 @@ impl FenrirBackend for NoopBackend {
 #[cfg(test)]
 mod tests {
     use crate::noop::NoopBackend;
-    use crate::ureq::UreqBackend;
     use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
     use std::any::{Any, TypeId};
     use url::Url;

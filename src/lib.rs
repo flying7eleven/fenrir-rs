@@ -1,12 +1,15 @@
 #![doc = include_str!("../README.md")]
 
 pub mod noop;
+#[cfg(feature = "reqwest-async")]
+pub mod reqwest;
 #[cfg(feature = "ureq")]
 pub mod ureq;
 
 #[cfg(feature = "structured_logging")]
 use log::kv::{Source, Visitor};
 use log::{Log, Metadata, Record};
+use parking_lot::RwLock;
 use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;
@@ -31,6 +34,22 @@ pub enum NetworkingBackend {
     /// The `Ureq` backend uses the `ureq` library for network requests
     #[cfg(feature = "ureq")]
     Ureq,
+
+    /// The `Reqwest` backend uses the `reqwest` library for network requests
+    #[cfg(feature = "reqwest-async")]
+    Reqwest,
+}
+
+impl NetworkingBackend {
+    #[cfg(feature = "reqwest-async")]
+    pub fn is_async(&self) -> bool {
+        matches!(self, NetworkingBackend::Reqwest)
+    }
+
+    #[cfg(not(feature = "reqwest-async"))]
+    pub fn is_async(&self) -> bool {
+        false
+    }
 }
 
 /// The [`SerializationFormat`] is used to configure the format to which the logging messages should
@@ -46,13 +65,13 @@ pub enum SerializationFormat {
 }
 
 /// The function definition which is used to serialize the logging messages for Loki
-pub(crate) type SerializationFn = fn(&Streams) -> Result<String, String>;
+pub(crate) type SerializationFn = fn(&Streams) -> Result<Vec<u8>, String>;
 
 /// This trait is used to specify the interfaces which are required for the communication
 /// with the remote endpoint.
 pub(crate) trait FenrirBackend {
     /// Sends a `Streams` object to the configured remote backend
-    fn send(&self, streams: &Streams, serializer: SerializationFn) -> Result<(), String>;
+    fn send(&self, serialized_stream: Vec<u8>) -> Result<(), String>;
 
     /// Query the `TypeId` of the implementation of this trait
     fn internal_type(&self) -> std::any::TypeId;
@@ -74,6 +93,8 @@ pub struct Fenrir {
     serializer: SerializationFn,
     include_level: bool,
     include_framework: bool,
+    log_stream: RwLock<Vec<Stream>>,
+    flush_threshold: usize,
 }
 
 impl Fenrir {
@@ -96,6 +117,8 @@ impl Fenrir {
             credentials: "".to_string(),
             include_level: false,
             include_framework: false,
+            runtime: None,
+            flush_threshold: 100,
         }
     }
 }
@@ -112,7 +135,10 @@ impl Log for Fenrir {
         // would create an infinite loop
         // TODO: this check should move into the backend implementation
         let module = record.module_path().unwrap_or("");
-        if module.starts_with("ureq") || !self.enabled(record.metadata()) {
+        if module.starts_with("ureq")
+            || module.starts_with("reqwest")
+            || !self.enabled(record.metadata())
+        {
             return;
         }
 
@@ -145,40 +171,60 @@ impl Log for Fenrir {
         }
 
         // create the logging stream we want to send to loki
-        let log_stream = Streams {
-            streams: vec![Stream {
-                stream: labels,
-                values: vec![vec![
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap()
-                        .as_nanos()
-                        .to_string(),
-                    serde_json::to_string(&SerializedEvent {
-                        file: record.file(),
-                        line: record.line(),
-                        module: record.module_path(),
-                        level: record.level().as_str(),
-                        target: record.target(),
-                        message: record.args().to_string(),
-                    })
-                    .expect("JSON serialization failed (should not happen)"),
-                ]],
-            }],
+        let stream_object = Stream {
+            stream: labels,
+            values: vec![vec![
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+                    .to_string(),
+                serde_json::to_string(&SerializedEvent {
+                    file: record.file(),
+                    line: record.line(),
+                    module: record.module_path(),
+                    level: record.level().as_str(),
+                    target: record.target(),
+                    message: record.args().to_string(),
+                })
+                .expect("JSON serialization failed (should not happen)"),
+            ]],
+        };
+        // push the stream object to the log stream
+        let log_stream_size = {
+            let mut log_stream = self.log_stream.write();
+            log_stream.push(stream_object);
+            log_stream.len()
         };
 
-        // send the log stream using the configured backend
-        match self.backend.send(&log_stream, self.serializer) {
-            Ok(_) => { /* nothing to do here*/ }
-            Err(_message) => {
-                #[cfg(debug_assertions)]
-                panic!("Could not send logs to Loki. The error was: {}", _message);
-            }
+        // check if we need to flush the logs
+        if log_stream_size >= self.flush_threshold {
+            self.flush();
         }
     }
 
     fn flush(&self) {
-        // TODO: implement the actual flushing
+        // fetch and serialize the log streams
+        let res = {
+            // this route can save several allocations since we do not need to clone the streams,
+            // and we reuse the allocated memory
+            let mut streams = self.log_stream.write();
+            let res = (self.serializer)(&Streams { streams: &streams });
+            streams.clear();
+            res
+        };
+        match res {
+            Ok(serialized_stream) => {
+                if let Err(e) = self.backend.send(serialized_stream) {
+                    #[cfg(debug_assertions)]
+                    panic!("Could not send logs to Loki. The error was: {}", e);
+                }
+            }
+            Err(message) => {
+                #[cfg(debug_assertions)]
+                panic!("Could not serialize logs. The error was: {}", message);
+            }
+        }
     }
 }
 
@@ -201,8 +247,17 @@ pub struct FenrirBuilder {
     credentials: String,
     /// If set to `true`, the logging level is included as a tag
     include_level: bool,
-    /// If set to `true`, the logging framework (`fenrir-rs`) is included as a tag
+    /// If set to `true,` the logging framework (`fenrir-rs`) is included as a tag
     include_framework: bool,
+    /// A runtime handle to the tokio runtime, if it is used
+    #[cfg(feature = "async-tokio")]
+    runtime: Option<tokio::runtime::Handle>,
+    #[cfg(not(feature = "async-tokio"))]
+    runtime: Option<()>,
+    /// Number of log messages after which to flush all outstanding messages to Loki.
+    /// Defaults to 100.
+    /// Must be greater than 0.
+    flush_threshold: usize,
 }
 
 impl FenrirBuilder {
@@ -337,6 +392,66 @@ impl FenrirBuilder {
         self
     }
 
+    /// Set the runtime handle to the tokio runtime which should be used for sending the log messages.
+    ///
+    /// # Example
+    /// ```
+    /// use tokio::runtime::Handle;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() {
+    ///   let handle = Handle::current();
+    ///   let builder = Fenrir::builder()
+    ///     .tokio_rt_handle(handle);
+    /// # }
+    #[cfg(feature = "async-tokio")]
+    pub fn tokio_rt_handle(mut self, rt_handle: tokio::runtime::Handle) -> FenrirBuilder {
+        self.runtime = Some(rt_handle);
+        self
+    }
+
+    /// Fetch the active runtime's handle and use it as the designated runtime.
+    ///
+    /// # Note
+    /// This method will panic if called outside the context of a Tokio 1.x runtime.
+    ///
+    /// # Example
+    /// ```
+    /// use tokio::runtime::Handle;
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() {
+    ///   let builder = Fenrir::builder()
+    ///     .tokio_rt_handle_current();
+    /// # }
+    #[cfg(feature = "async-tokio")]
+    pub fn tokio_rt_handle_current(mut self) -> FenrirBuilder {
+        self.runtime = Some(tokio::runtime::Handle::current());
+        self
+    }
+
+    /// Configure the number of messages which should be buffered before sending them all to Loki.
+    ///
+    /// # Panics
+    /// This method will panic if the supplied value is 0.
+    ///
+    /// # Example
+    /// ```
+    /// use fenrir_rs::Fenrir;
+    ///
+    /// let builder = Fenrir::builder()
+    ///    .flush_threshold(100);
+    /// ```
+    pub fn flush_threshold(mut self, size: usize) -> FenrirBuilder {
+        if size == 0 {
+            panic!("Buffer size must be greater than 0");
+        }
+        self.flush_threshold = size;
+        self
+    }
+
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling this method.
     ///
     /// Before creating a new instance, the supplied parameters are validated (in contrast to [`FenrirBuilder::build`]
@@ -370,11 +485,20 @@ impl FenrirBuilder {
             panic!("You have to select a `SerializationFormat` before creating an instance of `Fenrir`");
         }
 
+        // panic if no runtime was set and the selected network backend is async
+        if self.runtime.is_none() && self.network_backend.is_async() {
+            panic!("You have to set a runtime handle before creating an instance of `Fenrir` if you want to use an async network backend");
+        }
+
         // after the validation, we can call the actual build method to create the new Fenrir instance
         self.build()
     }
 
     /// Create a new `Fenrir` instance with the parameters supplied to this struct before calling this method.
+    ///
+    /// # Note
+    /// If an async network backend is selected, this method will panic if no runtime handle was set,
+    /// and this method is called outside the context of a Tokio 1.x runtime.
     ///
     /// # Example
     /// ```
@@ -389,18 +513,30 @@ impl FenrirBuilder {
     /// ```
     pub fn build(self) -> Fenrir {
         use crate::noop::NoopBackend;
-        #[cfg(feature = "ureq")]
-        use crate::ureq::UreqBackend;
+
+        // panic if the number of logs to buffer is 0 (will cause infinite memory growth otherwise)
+        if self.flush_threshold == 0 {
+            panic!("You have to set a buffer size greater than 0");
+        }
 
         // create the instance of the required network backend
         let network_backend: Box<dyn FenrirBackend + Send + Sync> = match self.network_backend {
             NetworkingBackend::None => Box::new(NoopBackend {}),
 
             #[cfg(feature = "ureq")]
-            NetworkingBackend::Ureq => Box::new(UreqBackend {
+            NetworkingBackend::Ureq => Box::new(crate::ureq::UreqBackend {
                 authentication: self.authentication,
                 credentials: self.credentials,
                 endpoint: self.endpoint,
+            }),
+
+            #[cfg(feature = "reqwest-async")]
+            NetworkingBackend::Reqwest => Box::new(crate::reqwest::ReqwestBackend {
+                authentication: self.authentication,
+                credentials: self.credentials,
+                endpoint: self.endpoint,
+                client: ::reqwest::Client::new(),
+                runtime_handle: self.runtime.unwrap_or_else(tokio::runtime::Handle::current),
             }),
         };
 
@@ -409,8 +545,8 @@ impl FenrirBuilder {
             SerializationFormat::None => noop_serializer,
 
             #[cfg(feature = "json")]
-            SerializationFormat::Json => |data: &Streams| -> Result<String, String> {
-                serde_json::to_string(data).map_err(|error| error.to_string())
+            SerializationFormat::Json => |data: &Streams| -> Result<Vec<u8>, String> {
+                serde_json::to_vec(data).map_err(|error| error.to_string())
             },
         };
 
@@ -421,13 +557,15 @@ impl FenrirBuilder {
             include_level: self.include_level,
             include_framework: self.include_framework,
             additional_tags: self.additional_tags,
+            log_stream: RwLock::new(Vec::with_capacity(self.flush_threshold)),
+            flush_threshold: self.flush_threshold,
         }
     }
 }
 
 /// A serialization implementation which does nothing when requesting to serialize a object
-pub(crate) fn noop_serializer(_: &Streams) -> Result<String, String> {
-    Ok("".to_string())
+pub(crate) fn noop_serializer(_: &Streams) -> Result<Vec<u8>, String> {
+    Ok(vec![])
 }
 
 /// A struct for visiting all structured logging labels of a log message and collecting them
@@ -501,40 +639,39 @@ pub(crate) struct SerializedEvent<'a> {
 
 /// The base data structure Loki expects when receiving logging messages.
 #[derive(Serialize)]
-pub(crate) struct Streams {
+pub(crate) struct Streams<'a> {
     /// A list of all logging messages with the attached meta information which should be logged
     /// by Loki
-    pub(crate) streams: Vec<Stream>,
+    pub(crate) streams: &'a [Stream],
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{AuthenticationMethod, Fenrir, NetworkingBackend, SerializationFormat};
-    use url::Url;
+    use crate::{Fenrir, NetworkingBackend, SerializationFormat};
 
     #[test]
     #[should_panic]
     fn building_a_validated_fenrir_instance_without_network_backend_panics() {
-        let fenrir = Fenrir::builder()
+        let _fenrir = Fenrir::builder()
             .format(SerializationFormat::Json)
             .build_with_validation();
     }
 
     #[test]
     fn building_a_non_validated_fenrir_instance_without_network_backend_does_not_panic() {
-        let fenrir = Fenrir::builder().format(SerializationFormat::Json).build();
+        let _fenrir = Fenrir::builder().format(SerializationFormat::Json).build();
     }
 
     #[test]
     #[should_panic]
     fn building_a_validated_fenrir_instance_without_serialization_backend_panics() {
-        let fenrir = Fenrir::builder()
+        let _fenrir = Fenrir::builder()
             .network(NetworkingBackend::Ureq)
             .build_with_validation();
     }
 
     #[test]
     fn building_a_non_validated_fenrir_instance_without_serialization_backend_does_not_panic() {
-        let fenrir = Fenrir::builder().network(NetworkingBackend::Ureq).build();
+        let _fenrir = Fenrir::builder().network(NetworkingBackend::Ureq).build();
     }
 }
