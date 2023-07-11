@@ -53,6 +53,10 @@ version = "1"
 default-features = false
 optional = true
 
+[dev-dependencies.value-bag]
+version = "1.4.1"
+default-features = false
+
 [dev-dependencies.fern]
 version = "0.6.2"
 default-features = false
