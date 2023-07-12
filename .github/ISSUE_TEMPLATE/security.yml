@@ -9,6 +9,14 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this security report! Please refer to the security guidelines before submitting a issue regarding security!
+  - type: input
+    id: contact-gpg-key
+    attributes:
+      label: Contact GPG key
+      description: What is the id of your public GPG key to communicate with you?
+      placeholder: ex. 0xDEADBEEF
+    validations:
+      required: true
   - type: textarea
     id: bug-description
     attributes:
