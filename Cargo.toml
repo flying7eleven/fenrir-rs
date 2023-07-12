@@ -53,6 +53,11 @@ version = "1.28.2"
 default-features = false
 optional = true
 
+[dependencies.protobuf]
+version = "3.2.0"
+default-features = false
+optional = true
+
 [dev-dependencies.value-bag]
 version = "1.4.1"
 default-features = false
@@ -76,6 +81,7 @@ reqwest-async = ["dep:reqwest", "async-tokio"]
 async-tokio = ["tokio", "tokio/rt"]
 json = ["dep:serde_json"]
 structured_logging = ["log/kv_unstable_std"]
+protobuf = ["dep:protobuf"]
 
 [package.metadata.docs.rs]
 all-features = true
