@@ -6,6 +6,7 @@ pub mod reqwest;
 #[cfg(feature = "ureq")]
 pub mod ureq;
 
+use cfg_if::cfg_if;
 #[cfg(feature = "structured_logging")]
 use log::kv::{Source, Visitor};
 use log::{Log, Metadata, Record};
@@ -172,15 +173,23 @@ impl Log for Fenrir {
             );
         }
 
-        let serialized_event = serde_json::to_string(&SerializedEvent {
-            file: record.file(),
-            line: record.line(),
-            module: record.module_path(),
-            level: record.level().as_str(),
-            target: record.target(),
-            message: record.args().to_string(),
-        })
-        .expect("JSON serialization failed (should not happen)");
+        let serialized_event = {
+            cfg_if! {
+                if #[cfg(feature = "json-log-fmt")] {
+                    serde_json::to_string(&SerializedEvent {
+                        file: record.file(),
+                        line: record.line(),
+                        module: record.module_path(),
+                        level: record.level().as_str(),
+                        target: record.target(),
+                        message: record.args().to_string(),
+                    })
+                    .expect("JSON serialization failed (should not happen)")
+                } else {
+                    record.args().to_string()
+                }
+            }
+        };
 
         if let Some(max_message_size) = self.max_message_size {
             if serialized_event.len() > max_message_size {
@@ -659,6 +668,7 @@ pub(crate) struct Stream {
 
 /// The data structure used for encoding a single log message before sending it to Loki
 #[derive(Serialize)]
+#[cfg(feature = "json-log-fmt")]
 pub(crate) struct SerializedEvent<'a> {
     /// The file name of the log message source
     pub(crate) file: Option<&'a str>,
