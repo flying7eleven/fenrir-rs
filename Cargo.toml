@@ -53,6 +53,10 @@ version = "1.29.1"
 default-features = false
 optional = true
 
+[dependencies.cfg-if]
+version = "1"
+default-features = false
+
 [dev-dependencies.value-bag]
 version = "1.11.1"
 default-features = false
@@ -75,6 +79,7 @@ ureq = ["dep:ureq"]
 reqwest-async = ["dep:reqwest", "async-tokio"]
 async-tokio = ["tokio", "tokio/rt"]
 json = ["dep:serde_json"]
+json-log-fmt = ["json"]
 structured_logging = ["log/kv_unstable_std"]
 
 [package.metadata.docs.rs]
