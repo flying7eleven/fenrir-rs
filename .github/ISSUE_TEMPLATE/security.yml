@@ -1,0 +1,36 @@
+name: Security issue
+description: File a security issue in the crate
+title: "[Security]: "
+labels: ["bug", "security", "triage"]
+assignees:
+  - flying7eleven
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this security report! Please refer to the security guidelines before submitting a issue regarding security!
+  - type: input
+    id: contact-gpg-key
+    attributes:
+      label: Contact GPG key
+      description: What is the id of your public GPG key to communicate with you?
+      placeholder: ex. 0xDEADBEEF
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: What happened?
+      description: Please tell us what happend. Paste here the **encrypted** version of the description.
+      placeholder: Tell us what you see!
+      value: "There is a security issue!"
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/flying7eleven/fenrir-rs/blob/main/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
