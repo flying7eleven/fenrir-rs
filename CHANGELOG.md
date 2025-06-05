@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 ___TODO___
 
+### Changed
+- Changed the minimum supported Rust version (MSRV) to 1.80.0 (released on _25 July, 2024_)
+
 ## 0.5.1 - 2023-07-11
 
 ### Fixed
