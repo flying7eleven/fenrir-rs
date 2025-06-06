@@ -2,6 +2,7 @@
 //! crate for network communication.
 use crate::{AuthenticationMethod, FenrirBackend};
 use std::any::TypeId;
+use ureq::Agent;
 use url::Url;
 
 /// A [`FenrirBackend`] implementation which uses the [ureq](https://crates.io/crates/ureq) crate to
@@ -18,20 +19,23 @@ pub(crate) struct UreqBackend {
 impl FenrirBackend for UreqBackend {
     fn send(&self, serialized_streams: Vec<u8>) -> Result<(), String> {
         use std::time::Duration;
-        use ureq::AgentBuilder;
+
+        let agent_config = Agent::config_builder()
+            .timeout_global(Some(Duration::from_secs(10)))
+            .build();
 
         let post_url = self
             .endpoint
             .clone()
             .join("/loki/api/v1/push")
             .map_err(|e| e.to_string())?;
-        let agent = AgentBuilder::new().timeout(Duration::from_secs(10)).build();
-        let mut request = agent.request_url("POST", &post_url);
-        request = request.set("Content-Type", "application/json; charset=utf-8");
+        let agent = agent_config.new_agent();
+        let mut request = agent.post(post_url.as_str());
+        request = request.header("Content-Type", "application/json; charset=utf-8");
         match self.authentication {
             AuthenticationMethod::None => {}
             AuthenticationMethod::Basic => {
-                request = request.set(
+                request = request.header(
                     "Authorization",
                     format!("Basic {}", self.credentials).as_str(),
                 );
@@ -39,7 +43,7 @@ impl FenrirBackend for UreqBackend {
         }
 
         request
-            .send_bytes(&serialized_streams)
+            .send(&serialized_streams)
             .map_err(|e| e.to_string())?;
         Ok(())
     }
